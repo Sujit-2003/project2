@@ -33,7 +33,6 @@ const AppFooter = () => {
     try {
       const res = await getMasterData()
       if (Number(res.code) === 0 && res.data) {
-        // data could be an object or an array with first item
         const data = Array.isArray(res.data) ? res.data[0] : res.data
         setMasterData(data)
       } else if (res.data) {
@@ -100,7 +99,8 @@ const AppFooter = () => {
           {masterData && !aboutLoading && (
             <div>
               <h5>{masterData.companyname}</h5>
-              <p>{masterData.about}</p>
+              <div dangerouslySetInnerHTML={{ __html: masterData.about }} />
+              <hr />
               <p>
                 <strong>Contact:</strong> {masterData.contactnumber}
               </p>
@@ -128,7 +128,9 @@ const AppFooter = () => {
               {faqs.map((faq, index) => (
                 <CAccordionItem key={faq.id || index} itemKey={index + 1}>
                   <CAccordionHeader>{faq.question}</CAccordionHeader>
-                  <CAccordionBody>{faq.response}</CAccordionBody>
+                  <CAccordionBody>
+                    <div dangerouslySetInnerHTML={{ __html: faq.response }} />
+                  </CAccordionBody>
                 </CAccordionItem>
               ))}
             </CAccordion>

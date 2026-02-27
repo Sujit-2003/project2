@@ -26,6 +26,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilSearch } from '@coreui/icons'
 import { getUsers, registerUser } from '../../services/userService'
+import { getAdminId } from '../../services/authService'
 
 const Users = () => {
   const [users, setUsers] = useState([])
@@ -60,17 +61,25 @@ const Users = () => {
     setLoading(true)
     setError('')
     try {
-      const res = await getUsers(2)
-      // Handle different response formats
+      // API stores all registered users under role 1
+      // Fetch role 1 users and filter out the admin
+      const res = await getUsers(1)
+      let allUsers = []
       if (Array.isArray(res)) {
-        setUsers(res)
-      } else if (Number(res.code) === 0) {
-        setUsers(Array.isArray(res.data) ? res.data : [])
-      } else if (res.data && Array.isArray(res.data)) {
-        setUsers(res.data)
+        allUsers = res
+      } else if (Number(res.code) === 0 && Array.isArray(res.data)) {
+        allUsers = res.data
+      } else if (Array.isArray(res.data)) {
+        allUsers = res.data
       } else {
         setError(res.message || 'Failed to load users.')
+        setLoading(false)
+        return
       }
+      // Filter out the logged-in admin from the list
+      const adminId = getAdminId()
+      const filtered = allUsers.filter((u) => u.id !== adminId)
+      setUsers(filtered)
     } catch {
       setError('Network error loading users.')
     } finally {
