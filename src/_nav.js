@@ -1,7 +1,19 @@
 import React from 'react'
 import CIcon from '@coreui/icons-react'
-import { cilSpeedometer, cilPeople, cilChildFriendly, cilPlus } from '@coreui/icons'
-import { CNavItem, CNavTitle } from '@coreui/react'
+import {
+  cilSpeedometer,
+  cilPeople,
+  cilChildFriendly,
+  cilPlus,
+  cilDrop,
+  cilPencil,
+  cilPuzzle,
+  cilChartPie,
+  cilNotes,
+  cilBell,
+  cilCalculator,
+} from '@coreui/icons'
+import { CNavItem, CNavGroup, CNavTitle } from '@coreui/react'
 
 const adminNav = [
   {
@@ -19,6 +31,62 @@ const adminNav = [
     name: 'Users',
     to: '/users',
     icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavTitle,
+    name: 'Theme',
+  },
+  {
+    component: CNavItem,
+    name: 'Colors',
+    to: '/theme/colors',
+    icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Typography',
+    to: '/theme/typography',
+    icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavTitle,
+    name: 'Components',
+  },
+  {
+    component: CNavGroup,
+    name: 'Base',
+    icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
+    items: [
+      { component: CNavItem, name: 'Cards', to: '/base/cards' },
+      { component: CNavItem, name: 'Tables', to: '/base/tables' },
+    ],
+  },
+  {
+    component: CNavItem,
+    name: 'Charts',
+    to: '/charts',
+    icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavGroup,
+    name: 'Forms',
+    icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
+    items: [
+      { component: CNavItem, name: 'Form Control', to: '/forms/form-control' },
+      { component: CNavItem, name: 'Select', to: '/forms/select' },
+    ],
+  },
+  {
+    component: CNavItem,
+    name: 'Modals',
+    to: '/notifications/modals',
+    icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Widgets',
+    to: '/widgets',
+    icon: <CIcon icon={cilCalculator} customClassName="nav-icon" />,
   },
 ]
 
