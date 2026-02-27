@@ -20,9 +20,9 @@ export async function adminLogin({ emailid, password }) {
 }
 
 export function storeSession(data, emailId) {
-  sessionStorage.setItem('adminId', data.user_id)
-  sessionStorage.setItem('um_id', data.user_id)
-  sessionStorage.setItem('roleId', data.roleid)
+  sessionStorage.setItem('adminId', data.user_id ?? data.userId ?? data.id ?? '')
+  sessionStorage.setItem('um_id', data.user_id ?? data.userId ?? data.id ?? '')
+  sessionStorage.setItem('roleId', data.roleid ?? data.roleId ?? data.role_id ?? '')
   sessionStorage.setItem('adminEmail', emailId)
   if (data.token) {
     sessionStorage.setItem('authToken', data.token)
@@ -39,6 +39,10 @@ export function getRoleId() {
 
 export function getUmId() {
   return Number(sessionStorage.getItem('um_id') || sessionStorage.getItem('adminId'))
+}
+
+export function getAdminId() {
+  return Number(sessionStorage.getItem('adminId'))
 }
 
 export function getAdminEmail() {

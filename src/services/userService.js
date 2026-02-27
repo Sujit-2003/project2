@@ -1,10 +1,10 @@
 import environment from '../config/environment'
-import { getAuthHeaders } from './authService'
+import { getAuthHeaders, getAdminId } from './authService'
 import { encrypt } from './encryptionService'
 
 const API_URL = environment.apiBaseUrl
 
-export async function registerUser({ name, emailId, contactNumber, password, createdby }) {
+export async function registerUser({ name, emailId, contactNumber, password }) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -14,7 +14,7 @@ export async function registerUser({ name, emailId, contactNumber, password, cre
       upassword: encrypt(password),
       cnumber: contactNumber,
       roleId: 2,
-      createdby: createdby,
+      createdby: getAdminId(),
     }),
   })
   return response.json()

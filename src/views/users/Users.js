@@ -61,8 +61,13 @@ const Users = () => {
     setError('')
     try {
       const res = await getUsers(2)
-      if (res.code === 0) {
+      // Handle different response formats
+      if (Array.isArray(res)) {
+        setUsers(res)
+      } else if (Number(res.code) === 0) {
         setUsers(Array.isArray(res.data) ? res.data : [])
+      } else if (res.data && Array.isArray(res.data)) {
+        setUsers(res.data)
       } else {
         setError(res.message || 'Failed to load users.')
       }
@@ -97,15 +102,13 @@ const Users = () => {
 
     setRegSubmitting(true)
     try {
-      const adminId = Number(sessionStorage.getItem('adminId'))
       const res = await registerUser({
         name: regForm.name,
         emailId: regForm.emailId,
         contactNumber: regForm.contactNumber,
         password: regForm.password,
-        createdby: adminId,
       })
-      if (res.code === 0) {
+      if (Number(res.code) === 0) {
         setRegSuccess(res.message || 'User registered successfully!')
         setRegForm({ name: '', emailId: '', contactNumber: '', password: '', confirmPassword: '' })
         setTimeout(() => {
@@ -184,15 +187,17 @@ const Users = () => {
                   <CTableRow>
                     <CTableHeaderCell>#</CTableHeaderCell>
                     <CTableHeaderCell>Parent Name</CTableHeaderCell>
-                    <CTableHeaderCell>Patient Name</CTableHeaderCell>
-                    <CTableHeaderCell>Patient Age</CTableHeaderCell>
+                    <CTableHeaderCell>Email</CTableHeaderCell>
+                    <CTableHeaderCell>Contact</CTableHeaderCell>
+                    <CTableHeaderCell>Status</CTableHeaderCell>
+                    <CTableHeaderCell>Created</CTableHeaderCell>
                     <CTableHeaderCell>Details</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
                   {users.length === 0 ? (
                     <CTableRow>
-                      <CTableDataCell colSpan={5} className="text-center text-muted">
+                      <CTableDataCell colSpan={7} className="text-center text-muted">
                         No users found.
                       </CTableDataCell>
                     </CTableRow>
@@ -200,11 +205,17 @@ const Users = () => {
                     users.map((user, index) => (
                       <CTableRow key={user.id || index}>
                         <CTableDataCell>{index + 1}</CTableDataCell>
-                        <CTableDataCell>{user.username}</CTableDataCell>
-                        <CTableDataCell>{user.patient_name || '-'}</CTableDataCell>
-                        <CTableDataCell>{user.patient_age || '-'}</CTableDataCell>
+                        <CTableDataCell>{user.username || user.name || '-'}</CTableDataCell>
+                        <CTableDataCell>{user.emailid || user.email || '-'}</CTableDataCell>
+                        <CTableDataCell>{user.cnumber || user.contactNumber || '-'}</CTableDataCell>
+                        <CTableDataCell>{user.ustatus || user.status || '-'}</CTableDataCell>
+                        <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
                         <CTableDataCell>
-                          <CIcon icon={cilSearch} className="text-primary" style={{ cursor: 'pointer' }} />
+                          <CIcon
+                            icon={cilSearch}
+                            className="text-primary"
+                            style={{ cursor: 'pointer' }}
+                          />
                         </CTableDataCell>
                       </CTableRow>
                     ))

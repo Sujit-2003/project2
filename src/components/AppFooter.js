@@ -32,8 +32,13 @@ const AppFooter = () => {
     setAboutError('')
     try {
       const res = await getMasterData()
-      if (res.code === 0) {
-        setMasterData(res.data)
+      if (Number(res.code) === 0 && res.data) {
+        // data could be an object or an array with first item
+        const data = Array.isArray(res.data) ? res.data[0] : res.data
+        setMasterData(data)
+      } else if (res.data) {
+        const data = Array.isArray(res.data) ? res.data[0] : res.data
+        setMasterData(data)
       } else {
         setAboutError(res.message || 'Failed to load data.')
       }
@@ -50,8 +55,12 @@ const AppFooter = () => {
     setFaqError('')
     try {
       const res = await getAllFaqs()
-      if (res.code === 0) {
+      if (Number(res.code) === 0) {
         setFaqs(Array.isArray(res.data) ? res.data : [])
+      } else if (Array.isArray(res.data)) {
+        setFaqs(res.data)
+      } else if (Array.isArray(res)) {
+        setFaqs(res)
       } else {
         setFaqError(res.message || 'Failed to load FAQs.')
       }
@@ -133,4 +142,4 @@ const AppFooter = () => {
   )
 }
 
-export default React.memo(AppFooter)
+export default AppFooter

@@ -38,9 +38,10 @@ const Login = () => {
     setLoading(true)
     try {
       const res = await adminLogin({ emailid: email, password })
-      if (res.code === 0 && res.data) {
+      if (Number(res.code) === 0 && res.data) {
+        const roleId = Number(res.data.roleid ?? res.data.roleId ?? res.data.role_id)
         // Only Role 1 (Admin) is allowed to login
-        if (res.data.roleid !== 1) {
+        if (roleId !== 1) {
           setError('Unauthorized access')
           setLoading(false)
           return
