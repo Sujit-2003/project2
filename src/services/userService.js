@@ -1,13 +1,21 @@
 import environment from '../config/environment'
 import { getAuthHeaders } from './authService'
+import { encrypt } from './encryptionService'
 
 const API_URL = environment.apiBaseUrl
 
-export async function registerUser({ username, emailid, upassword, cnumber }) {
+export async function registerUser({ name, emailId, contactNumber, password, createdby }) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ username, emailid, upassword, cnumber }),
+    body: JSON.stringify({
+      username: name,
+      emailid: emailId,
+      upassword: encrypt(password),
+      cnumber: contactNumber,
+      roleId: 2,
+      createdby: createdby,
+    }),
   })
   return response.json()
 }

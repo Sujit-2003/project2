@@ -1,0 +1,1 @@
+import{g as a,h as t}from"./index-D7dChUq5.js";const s=a.apiBaseUrl;async function r(e){return(await fetch(`${s}/add-patient`,{method:"POST",headers:t(),body:JSON.stringify(e)})).json()}async function i(e){return(await fetch(`${s}/patients/${e}`,{method:"GET",headers:t()})).json()}export{r as a,i as g};

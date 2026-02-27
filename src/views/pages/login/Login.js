@@ -39,12 +39,14 @@ const Login = () => {
     try {
       const res = await adminLogin({ emailid: email, password })
       if (res.code === 0 && res.data) {
-        storeSession(res.data, email)
-        if (res.data.roleid === 1) {
-          navigate('/dashboard')
-        } else {
-          navigate('/patients')
+        // Only Role 1 (Admin) is allowed to login
+        if (res.data.roleid !== 1) {
+          setError('Unauthorized access')
+          setLoading(false)
+          return
         }
+        storeSession(res.data, email)
+        navigate('/dashboard')
       } else {
         setError(res.message || 'Invalid email or password.')
       }
