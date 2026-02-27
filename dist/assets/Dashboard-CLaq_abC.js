@@ -1,1 +1,0 @@
-import{j as r}from"./index-D7dChUq5.js";import{C as s,a,b as o,c as e}from"./CRow-DWDH-8Cv.js";import{C as d}from"./CCardHeader-BiU4jNSZ.js";const n=()=>r.jsx(s,{children:r.jsx(a,{xs:12,children:r.jsxs(o,{className:"mb-4",children:[r.jsx(d,{children:r.jsx("strong",{children:"Dashboard"})}),r.jsx(e,{children:r.jsx("p",{children:"Welcome to SUJI."})})]})})});export{n as default};
