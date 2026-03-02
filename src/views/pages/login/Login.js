@@ -18,6 +18,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 import { adminLogin, storeSession } from '../../../services/authService'
+import { encrypt } from '../../../services/encryptionService'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -25,6 +26,12 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const tryLogin = async (emailid, pwd) => {
+    const res = await adminLogin({ emailid, password: pwd })
+    if (Number(res.code) === 0 && res.data) return res
+    return null
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,19 +44,25 @@ const Login = () => {
 
     setLoading(true)
     try {
-      const res = await adminLogin({ emailid: email, password })
-      if (Number(res.code) === 0 && res.data) {
-        const roleId = Number(res.data.roleid ?? res.data.roleId ?? res.data.role_id)
-        // Only Role 1 (Admin) is allowed to login
-        if (roleId !== 1) {
-          setError('Unauthorized access')
-          setLoading(false)
-          return
+      // Try encrypted password first (registered users), then plain (legacy admin)
+      let res = await tryLogin(email, encrypt(password))
+      if (!res) {
+        res = await tryLogin(email, password)
+      }
+
+      if (res && res.data) {
+        const userId = Number(res.data.user_id ?? res.data.userId ?? res.data.id)
+        // Admin is user_id 1, all others are parents (role 2)
+        const effectiveRole = userId === 1 ? 1 : 2
+        storeSession(res.data, email, effectiveRole)
+
+        if (effectiveRole === 1) {
+          navigate('/dashboard')
+        } else {
+          navigate('/patients')
         }
-        storeSession(res.data, email)
-        navigate('/dashboard')
       } else {
-        setError(res.message || 'Invalid email or password.')
+        setError('Invalid email or password.')
       }
     } catch {
       setError('Network error. Please try again.')

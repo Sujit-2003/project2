@@ -63,7 +63,7 @@ const AddPatient = () => {
         contact_number: form.contactNumber,
       }
       const res = await addPatient(payload)
-      if (res.code === 0) {
+      if (Number(res.code) === 0) {
         setSuccess(res.message || 'Patient added successfully!')
         setTimeout(() => navigate('/patients'), 1500)
       } else {

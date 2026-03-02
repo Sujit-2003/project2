@@ -26,8 +26,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilSearch } from '@coreui/icons'
 import { getUsers, registerUser } from '../../services/userService'
-import { addPatient } from '../../services/patientService'
-import { getAdminId, getUmId } from '../../services/authService'
+import { getAdminId } from '../../services/authService'
 
 const Users = () => {
   const [users, setUsers] = useState([])
@@ -47,21 +46,6 @@ const Users = () => {
     confirmPassword: '',
   })
 
-  // Add Patient modal
-  const [patientVisible, setPatientVisible] = useState(false)
-  const [patSubmitting, setPatSubmitting] = useState(false)
-  const [patError, setPatError] = useState('')
-  const [patSuccess, setPatSuccess] = useState('')
-  const [patForm, setPatForm] = useState({
-    firstName: '',
-    lastName: '',
-    dob: '',
-    gender: '',
-    about: '',
-    contactNumber: '',
-    healthHistory: '',
-    relationship: '',
-  })
 
   const loadUsers = async () => {
     setLoading(true)
@@ -141,68 +125,16 @@ const Users = () => {
     }
   }
 
-  const handlePatChange = (e) => {
-    setPatForm({ ...patForm, [e.target.name]: e.target.value })
-  }
-
-  const handleAddPatient = async (e) => {
-    e.preventDefault()
-    setPatError('')
-    setPatSuccess('')
-
-    if (!patForm.firstName || !patForm.lastName || !patForm.dob || !patForm.gender || !patForm.contactNumber || !patForm.relationship) {
-      setPatError('Please fill all required fields.')
-      return
-    }
-
-    setPatSubmitting(true)
-    try {
-      const res = await addPatient({
-        first_name: patForm.firstName,
-        last_name: patForm.lastName,
-        dob: patForm.dob + ' 00:00:00',
-        gender: patForm.gender,
-        about: patForm.about,
-        contact_numb: patForm.contactNumber,
-        contact_number: patForm.contactNumber,
-        health_history: patForm.healthHistory,
-        relationship: patForm.relationship,
-        um_id: getUmId(),
-      })
-      if (Number(res.code) === 0) {
-        setPatSuccess(res.message || 'Patient added successfully!')
-        setPatForm({ firstName: '', lastName: '', dob: '', gender: '', about: '', contactNumber: '', healthHistory: '', relationship: '' })
-        setTimeout(() => {
-          setPatientVisible(false)
-          setPatSuccess('')
-          loadUsers()
-        }, 1500)
-      } else {
-        setPatError(res.message || 'Failed to add patient.')
-      }
-    } catch {
-      setPatError('Network error adding patient.')
-    } finally {
-      setPatSubmitting(false)
-    }
-  }
-
   return (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
           <CCardHeader className="d-flex justify-content-between align-items-center">
             <strong>Users</strong>
-            <div className="d-flex gap-2">
-              <CButton color="primary" size="sm" onClick={() => setRegisterVisible(true)}>
-                <CIcon icon={cilPlus} className="me-1" />
-                Register User
-              </CButton>
-              <CButton color="success" size="sm" onClick={() => setPatientVisible(true)}>
-                <CIcon icon={cilPlus} className="me-1" />
-                Add Patient
-              </CButton>
-            </div>
+            <CButton color="primary" size="sm" onClick={() => setRegisterVisible(true)}>
+              <CIcon icon={cilPlus} className="me-1" />
+              Register User
+            </CButton>
           </CCardHeader>
           <CCardBody>
             {loading && (
@@ -321,126 +253,6 @@ const Users = () => {
         </CForm>
       </CModal>
 
-      {/* Add Patient Modal */}
-      <CModal size="lg" visible={patientVisible} onClose={() => setPatientVisible(false)}>
-        <CModalHeader>
-          <CModalTitle>Add Patient</CModalTitle>
-        </CModalHeader>
-        <CForm onSubmit={handleAddPatient}>
-          <CModalBody>
-            {patError && <CAlert color="danger">{patError}</CAlert>}
-            {patSuccess && <CAlert color="success">{patSuccess}</CAlert>}
-            <CRow>
-              <CCol md={6}>
-                <div className="mb-3">
-                  <CFormLabel>First Name *</CFormLabel>
-                  <CFormInput
-                    name="firstName"
-                    value={patForm.firstName}
-                    onChange={handlePatChange}
-                    required
-                  />
-                </div>
-              </CCol>
-              <CCol md={6}>
-                <div className="mb-3">
-                  <CFormLabel>Last Name *</CFormLabel>
-                  <CFormInput
-                    name="lastName"
-                    value={patForm.lastName}
-                    onChange={handlePatChange}
-                    required
-                  />
-                </div>
-              </CCol>
-            </CRow>
-            <CRow>
-              <CCol md={6}>
-                <div className="mb-3">
-                  <CFormLabel>Date of Birth *</CFormLabel>
-                  <CFormInput
-                    type="date"
-                    name="dob"
-                    value={patForm.dob}
-                    onChange={handlePatChange}
-                    required
-                  />
-                </div>
-              </CCol>
-              <CCol md={6}>
-                <div className="mb-3">
-                  <CFormLabel>Gender *</CFormLabel>
-                  <select
-                    className="form-select"
-                    name="gender"
-                    value={patForm.gender}
-                    onChange={handlePatChange}
-                    required
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </CCol>
-            </CRow>
-            <CRow>
-              <CCol md={6}>
-                <div className="mb-3">
-                  <CFormLabel>Contact Number *</CFormLabel>
-                  <CFormInput
-                    name="contactNumber"
-                    value={patForm.contactNumber}
-                    onChange={handlePatChange}
-                    required
-                  />
-                </div>
-              </CCol>
-              <CCol md={6}>
-                <div className="mb-3">
-                  <CFormLabel>Relationship *</CFormLabel>
-                  <CFormInput
-                    name="relationship"
-                    value={patForm.relationship}
-                    onChange={handlePatChange}
-                    placeholder="e.g. Parent, Guardian"
-                    required
-                  />
-                </div>
-              </CCol>
-            </CRow>
-            <div className="mb-3">
-              <CFormLabel>About</CFormLabel>
-              <textarea
-                className="form-control"
-                name="about"
-                rows={2}
-                value={patForm.about}
-                onChange={handlePatChange}
-              />
-            </div>
-            <div className="mb-3">
-              <CFormLabel>Health History</CFormLabel>
-              <textarea
-                className="form-control"
-                name="healthHistory"
-                rows={2}
-                value={patForm.healthHistory}
-                onChange={handlePatChange}
-              />
-            </div>
-          </CModalBody>
-          <CModalFooter>
-            <CButton color="secondary" onClick={() => setPatientVisible(false)}>
-              Cancel
-            </CButton>
-            <CButton color="success" type="submit" disabled={patSubmitting}>
-              {patSubmitting ? <CSpinner size="sm" /> : 'Save'}
-            </CButton>
-          </CModalFooter>
-        </CForm>
-      </CModal>
     </CRow>
   )
 }

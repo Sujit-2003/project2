@@ -19,10 +19,13 @@ export async function adminLogin({ emailid, password }) {
   return response.json()
 }
 
-export function storeSession(data, emailId) {
-  sessionStorage.setItem('adminId', data.user_id ?? data.userId ?? data.id ?? '')
-  sessionStorage.setItem('um_id', data.user_id ?? data.userId ?? data.id ?? '')
-  sessionStorage.setItem('roleId', data.roleid ?? data.roleId ?? data.role_id ?? '')
+export function storeSession(data, emailId, effectiveRole) {
+  const userId = data.user_id ?? data.userId ?? data.id ?? ''
+  sessionStorage.setItem('adminId', userId)
+  sessionStorage.setItem('um_id', userId)
+  // Use effectiveRole if provided (admin=1, parent=2), otherwise fallback to API value
+  const roleId = effectiveRole ?? data.roleid ?? data.roleId ?? data.role_id ?? ''
+  sessionStorage.setItem('roleId', roleId)
   sessionStorage.setItem('adminEmail', emailId)
   if (data.token) {
     sessionStorage.setItem('authToken', data.token)

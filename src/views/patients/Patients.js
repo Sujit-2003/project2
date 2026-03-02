@@ -47,7 +47,7 @@ const Patients = () => {
       try {
         const umId = getUmId()
         const res = await getPatients(umId)
-        if (res.code === 0) {
+        if (Number(res.code) === 0) {
           setPatients(Array.isArray(res.data) ? res.data : [])
         } else {
           setError(res.message || 'Failed to load patients.')
