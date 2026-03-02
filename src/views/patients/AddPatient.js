@@ -78,7 +78,7 @@ const AddPatient = () => {
 
   return (
     <CRow>
-      <CCol xs={12} md={8} lg={6}>
+      <CCol xs={12}>
         <CCard className="mb-4">
           <CCardHeader>
             <strong>Add Patient</strong>
@@ -87,49 +87,68 @@ const AddPatient = () => {
             {error && <CAlert color="danger">{error}</CAlert>}
             {success && <CAlert color="success">{success}</CAlert>}
             <CForm onSubmit={handleSubmit}>
-              <div className="mb-3">
-                <CFormLabel>First Name</CFormLabel>
-                <CFormInput name="firstName" value={form.firstName} onChange={handleChange} required />
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Last Name</CFormLabel>
-                <CFormInput name="lastName" value={form.lastName} onChange={handleChange} required />
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Date of Birth</CFormLabel>
-                <CFormInput type="date" name="dob" value={form.dob} onChange={handleChange} required />
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Gender</CFormLabel>
-                <CFormSelect name="gender" value={form.gender} onChange={handleChange} required>
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </CFormSelect>
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Relationship</CFormLabel>
-                <CFormInput name="relationship" value={form.relationship} onChange={handleChange} />
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Contact Number</CFormLabel>
-                <CFormInput name="contactNumber" value={form.contactNumber} onChange={handleChange} />
-              </div>
-              <div className="mb-3">
-                <CFormLabel>About Patient</CFormLabel>
-                <CFormTextarea name="about" value={form.about} onChange={handleChange} rows={3} />
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Health History</CFormLabel>
-                <CFormTextarea
-                  name="healthHistory"
-                  value={form.healthHistory}
-                  onChange={handleChange}
-                  rows={3}
-                />
-              </div>
-              <div className="d-flex gap-2">
+              <CRow>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>First Name</CFormLabel>
+                    <CFormInput name="firstName" value={form.firstName} onChange={handleChange} required />
+                  </div>
+                </CCol>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>Last Name</CFormLabel>
+                    <CFormInput name="lastName" value={form.lastName} onChange={handleChange} required />
+                  </div>
+                </CCol>
+              </CRow>
+              <CRow>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>Date of Birth</CFormLabel>
+                    <CFormInput type="date" name="dob" value={form.dob} onChange={handleChange} required />
+                  </div>
+                </CCol>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>Gender</CFormLabel>
+                    <CFormSelect name="gender" value={form.gender} onChange={handleChange} required>
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </CFormSelect>
+                  </div>
+                </CCol>
+              </CRow>
+              <CRow>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>Relationship</CFormLabel>
+                    <CFormInput name="relationship" value={form.relationship} onChange={handleChange} />
+                  </div>
+                </CCol>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>Contact Number</CFormLabel>
+                    <CFormInput name="contactNumber" value={form.contactNumber} onChange={handleChange} />
+                  </div>
+                </CCol>
+              </CRow>
+              <CRow>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>About Patient</CFormLabel>
+                    <CFormTextarea name="about" value={form.about} onChange={handleChange} rows={2} />
+                  </div>
+                </CCol>
+                <CCol md={6}>
+                  <div className="mb-3">
+                    <CFormLabel>Health History</CFormLabel>
+                    <CFormTextarea name="healthHistory" value={form.healthHistory} onChange={handleChange} rows={2} />
+                  </div>
+                </CCol>
+              </CRow>
+              <div className="d-flex gap-2 mt-2">
                 <CButton color="primary" type="submit" disabled={submitting}>
                   {submitting ? <CSpinner size="sm" /> : 'Add Patient'}
                 </CButton>
