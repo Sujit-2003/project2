@@ -79,8 +79,8 @@ const Users = () => {
       const adminId = getAdminId()
       const filtered = allUsers.filter((u) => u.id !== adminId)
       setUsers(filtered)
-    } catch {
-      setError('Network error loading users.')
+    } catch (err) {
+      setError(err?.message || 'Failed to load users. Please try again.')
     } finally {
       setLoading(false)
     }

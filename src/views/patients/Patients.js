@@ -52,8 +52,8 @@ const Patients = () => {
         } else {
           setError(res.message || 'Failed to load patients.')
         }
-      } catch {
-        setError('Network error loading patients.')
+      } catch (err) {
+        setError(err?.message || 'Failed to load patients. Please try again.')
       } finally {
         setLoading(false)
       }

@@ -9,7 +9,13 @@ export async function getTermsAndConditions() {
       method: 'GET',
       headers: getAuthHeaders(),
     })
-    const res = await response.json()
+    const text = await response.text()
+    let res
+    try {
+      res = JSON.parse(text)
+    } catch {
+      throw new Error('Non-JSON response')
+    }
     if (Number(res.code) === 0 && res.data) {
       return res.data
     }

@@ -10,13 +10,26 @@ export function getAuthHeaders() {
   }
 }
 
+export async function safeJson(response) {
+  const text = await response.text()
+  try {
+    return JSON.parse(text)
+  } catch {
+    return {
+      code: 1,
+      data: null,
+      message: response.ok ? 'Invalid response from server.' : `Server error (${response.status}).`,
+    }
+  }
+}
+
 export async function adminLogin({ emailid, password }) {
   const response = await fetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ emailid, password }),
   })
-  return response.json()
+  return safeJson(response)
 }
 
 export function storeSession(data, emailId, effectiveRole) {

@@ -1,5 +1,5 @@
 import environment from '../config/environment'
-import { getAuthHeaders, getAdminId } from './authService'
+import { getAuthHeaders, getAdminId, safeJson } from './authService'
 import { encrypt, encryptEmail } from './encryptionService'
 
 const API_URL = environment.apiBaseUrl
@@ -18,7 +18,7 @@ export async function registerUser({ name, emailId, contactNumber, password, cou
       createdby: getAdminId(),
     }),
   })
-  return response.json()
+  return safeJson(response)
 }
 
 export async function getUsers(roleId) {
@@ -26,5 +26,5 @@ export async function getUsers(roleId) {
     method: 'GET',
     headers: getAuthHeaders(),
   })
-  return response.json()
+  return safeJson(response)
 }

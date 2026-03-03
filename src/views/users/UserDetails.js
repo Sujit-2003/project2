@@ -39,8 +39,8 @@ const UserDetails = () => {
         } else {
           setError('User not found.')
         }
-      } catch {
-        setError('Network error loading user details.')
+      } catch (err) {
+        setError(err?.message || 'Failed to load user details. Please try again.')
       } finally {
         setLoading(false)
       }

@@ -54,8 +54,8 @@ const Symptoms = () => {
         if (Array.isArray(res)) data = res
         else if (Array.isArray(res.data)) data = res.data
         setSymptoms(data)
-      } catch {
-        setError('Network error loading symptoms.')
+      } catch (err) {
+        setError(err?.message || 'Failed to load symptoms. Please try again.')
       } finally {
         setLoading(false)
       }

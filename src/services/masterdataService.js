@@ -1,5 +1,5 @@
 import environment from '../config/environment'
-import { getAuthHeaders } from './authService'
+import { getAuthHeaders, safeJson } from './authService'
 
 const API_URL = environment.apiBaseUrl
 
@@ -8,5 +8,5 @@ export async function getMasterData() {
     method: 'GET',
     headers: getAuthHeaders(),
   })
-  return response.json()
+  return safeJson(response)
 }

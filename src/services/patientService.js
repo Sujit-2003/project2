@@ -1,5 +1,5 @@
 import environment from '../config/environment'
-import { getAuthHeaders } from './authService'
+import { getAuthHeaders, safeJson } from './authService'
 
 const API_URL = environment.apiBaseUrl
 
@@ -9,7 +9,7 @@ export async function addPatient(patientData) {
     headers: getAuthHeaders(),
     body: JSON.stringify(patientData),
   })
-  return response.json()
+  return safeJson(response)
 }
 
 export async function getPatients(umId) {
@@ -17,5 +17,5 @@ export async function getPatients(umId) {
     method: 'GET',
     headers: getAuthHeaders(),
   })
-  return response.json()
+  return safeJson(response)
 }
