@@ -1,6 +1,6 @@
 import environment from '../config/environment'
 import { getAuthHeaders, getAdminId } from './authService'
-import { encrypt } from './encryptionService'
+import { encrypt, encryptEmail } from './encryptionService'
 
 const API_URL = environment.apiBaseUrl
 
@@ -10,7 +10,7 @@ export async function registerUser({ name, emailId, contactNumber, password }) {
     headers: getAuthHeaders(),
     body: JSON.stringify({
       username: name,
-      emailid: emailId,
+      emailid: encryptEmail(emailId),
       upassword: encrypt(password),
       cnumber: contactNumber,
       roleId: 2,

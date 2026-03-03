@@ -18,7 +18,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 import { adminLogin, storeSession } from '../../../services/authService'
-import { encrypt } from '../../../services/encryptionService'
+import { encrypt, encryptEmail } from '../../../services/encryptionService'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -44,17 +44,18 @@ const Login = () => {
 
     setLoading(true)
     try {
-      // Try encrypted password first (registered users), then plain (legacy admin)
-      let res = await tryLogin(email, encrypt(password))
+      const encEmail = encryptEmail(email)
+      // Try encrypted email+password first (registered users), then plain (legacy admin)
+      let res = await tryLogin(encEmail, encrypt(password))
       if (!res) {
-        res = await tryLogin(email, password)
+        res = await tryLogin(email.toLowerCase(), password)
       }
 
       if (res && res.data) {
         const userId = Number(res.data.user_id ?? res.data.userId ?? res.data.id)
         // Admin is user_id 1, all others are parents (role 2)
         const effectiveRole = userId === 1 ? 1 : 2
-        storeSession(res.data, email, effectiveRole)
+        storeSession(res.data, email.toLowerCase(), effectiveRole)
 
         if (effectiveRole === 1) {
           navigate('/dashboard')
