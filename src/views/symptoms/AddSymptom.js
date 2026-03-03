@@ -13,15 +13,14 @@ import {
   CFormTextarea,
   CButton,
   CSpinner,
-  CAlert,
 } from '@coreui/react'
 import { addSymptom } from '../../services/symptomService'
+import { useToast } from '../../components/ToastContext'
 
 const AddSymptom = () => {
   const navigate = useNavigate()
+  const { showSuccess, showError, showWarning } = useToast()
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [form, setForm] = useState({
     symptom_name: '',
     severity_level: '',
@@ -34,11 +33,9 @@ const AddSymptom = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
 
     if (!form.symptom_name || !form.severity_level) {
-      setError('Symptom name and severity level are required.')
+      showWarning('Symptom name and severity level are required.')
       return
     }
 
@@ -46,13 +43,13 @@ const AddSymptom = () => {
     try {
       const res = await addSymptom(form)
       if (Number(res.code) === 0) {
-        setSuccess(res.message || 'Symptom added successfully!')
+        showSuccess(res.message || 'Symptom added successfully!')
         setTimeout(() => navigate('/symptoms'), 1500)
       } else {
-        setError(res.message || 'Failed to add symptom.')
+        showError(res.message || 'Failed to add symptom.')
       }
     } catch {
-      setError('Network error adding symptom.')
+      showError('Network error adding symptom.')
     } finally {
       setSubmitting(false)
     }
@@ -66,8 +63,6 @@ const AddSymptom = () => {
             <strong>Add Symptom</strong>
           </CCardHeader>
           <CCardBody>
-            {error && <CAlert color="danger">{error}</CAlert>}
-            {success && <CAlert color="success">{success}</CAlert>}
             <CForm onSubmit={handleSubmit}>
               <div className="mb-3">
                 <CFormLabel>Symptom Name</CFormLabel>

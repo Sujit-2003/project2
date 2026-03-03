@@ -6,6 +6,7 @@ import { CSpinner, useColorModes } from '@coreui/react'
 import './scss/style.scss'
 
 import ProtectedRoute from './components/ProtectedRoute'
+import { ToastProvider } from './components/ToastContext'
 
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
 const Login = React.lazy(() => import('./views/pages/login/Login'))
@@ -29,6 +30,7 @@ const App = () => {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <ToastProvider>
     <HashRouter>
       <Suspense
         fallback={
@@ -51,6 +53,7 @@ const App = () => {
         </Routes>
       </Suspense>
     </HashRouter>
+    </ToastProvider>
   )
 }
 

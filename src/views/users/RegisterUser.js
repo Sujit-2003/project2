@@ -13,7 +13,6 @@ import {
   CFormCheck,
   CButton,
   CSpinner,
-  CAlert,
   CInputGroup,
   CModal,
   CModalHeader,
@@ -23,6 +22,7 @@ import {
 } from '@coreui/react'
 import { registerUser } from '../../services/userService'
 import { getTermsAndConditions } from '../../services/termsService'
+import { useToast } from '../../components/ToastContext'
 
 const countryCodes = [
   { code: '+91', label: '+91 (India)', countryid: 1 },
@@ -39,9 +39,8 @@ const countryCodes = [
 
 const RegisterUser = () => {
   const navigate = useNavigate()
+  const { showSuccess, showError, showWarning } = useToast()
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
 
   // Terms modal state
@@ -55,7 +54,6 @@ const RegisterUser = () => {
     countryCodeIndex: '0',
     phone: '',
     password: '',
-    confirmPassword: '',
   })
 
   const handleChange = (e) => {
@@ -77,19 +75,21 @@ const RegisterUser = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
 
     if (!form.name || !form.emailId || !form.phone || !form.password) {
-      setError('All fields are required.')
+      showWarning('All fields are required.')
       return
     }
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.')
+    if (!form.emailId.includes('@')) {
+      showWarning('Please enter a valid email address.')
+      return
+    }
+    if (form.password.length < 6) {
+      showWarning('Password must be at least 6 characters.')
       return
     }
     if (!termsAccepted) {
-      setError('You must accept Terms and Conditions to register.')
+      showError('You must accept Terms and Conditions to register.')
       return
     }
 
@@ -104,13 +104,13 @@ const RegisterUser = () => {
         countryid: selected.countryid,
       })
       if (Number(res.code) === 0) {
-        setSuccess(res.message || 'User registered successfully!')
+        showSuccess(res.message || 'User registered successfully!')
         setTimeout(() => navigate('/users'), 1500)
       } else {
-        setError(res.message || 'Registration failed.')
+        showError(res.message || 'Registration failed.')
       }
     } catch {
-      setError('Network error during registration.')
+      showError('Network error during registration.')
     } finally {
       setSubmitting(false)
     }
@@ -124,8 +124,6 @@ const RegisterUser = () => {
             <strong>Register User</strong>
           </CCardHeader>
           <CCardBody>
-            {error && <CAlert color="danger">{error}</CAlert>}
-            {success && <CAlert color="success">{success}</CAlert>}
             <CForm onSubmit={handleSubmit}>
               <CRow>
                 <CCol md={6}>
@@ -174,8 +172,6 @@ const RegisterUser = () => {
                     </CInputGroup>
                   </div>
                 </CCol>
-              </CRow>
-              <CRow>
                 <CCol md={6}>
                   <div className="mb-3">
                     <CFormLabel>Password</CFormLabel>
@@ -183,18 +179,6 @@ const RegisterUser = () => {
                       type="password"
                       name="password"
                       value={form.password}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </CCol>
-                <CCol md={6}>
-                  <div className="mb-3">
-                    <CFormLabel>Confirm Password</CFormLabel>
-                    <CFormInput
-                      type="password"
-                      name="confirmPassword"
-                      value={form.confirmPassword}
                       onChange={handleChange}
                       required
                     />

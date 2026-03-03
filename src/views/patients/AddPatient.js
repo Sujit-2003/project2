@@ -13,16 +13,15 @@ import {
   CFormTextarea,
   CButton,
   CSpinner,
-  CAlert,
 } from '@coreui/react'
 import { addPatient } from '../../services/patientService'
 import { getUmId } from '../../services/authService'
+import { useToast } from '../../components/ToastContext'
 
 const AddPatient = () => {
   const navigate = useNavigate()
+  const { showSuccess, showError, showWarning } = useToast()
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -41,11 +40,9 @@ const AddPatient = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
 
     if (!form.firstName || !form.lastName || !form.dob || !form.gender) {
-      setError('First name, last name, date of birth, and gender are required.')
+      showWarning('First name, last name, date of birth, and gender are required.')
       return
     }
 
@@ -66,13 +63,13 @@ const AddPatient = () => {
       }
       const res = await addPatient(payload)
       if (Number(res.code) === 0) {
-        setSuccess(res.message || 'Patient added successfully!')
+        showSuccess(res.message || 'Patient added successfully!')
         setTimeout(() => navigate('/patients'), 1500)
       } else {
-        setError(res.message || 'Failed to add patient.')
+        showError(res.message || 'Failed to add patient.')
       }
     } catch {
-      setError('Network error adding patient.')
+      showError('Network error adding patient.')
     } finally {
       setSubmitting(false)
     }
@@ -86,8 +83,6 @@ const AddPatient = () => {
             <strong>Add Patient</strong>
           </CCardHeader>
           <CCardBody>
-            {error && <CAlert color="danger">{error}</CAlert>}
-            {success && <CAlert color="success">{success}</CAlert>}
             <CForm onSubmit={handleSubmit}>
               <CRow>
                 <CCol md={6}>

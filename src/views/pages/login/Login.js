@@ -13,7 +13,6 @@ import {
   CInputGroupText,
   CRow,
   CSpinner,
-  CAlert,
   CModal,
   CModalHeader,
   CModalTitle,
@@ -24,13 +23,14 @@ import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 import { adminLogin, storeSession } from '../../../services/authService'
 import { encrypt, encryptEmail } from '../../../services/encryptionService'
+import { useToast } from '../../../components/ToastContext'
 
 const Login = () => {
   const navigate = useNavigate()
+  const { showSuccess, showError, showWarning, showInfo } = useToast()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [showUnauthorized, setShowUnauthorized] = useState(false)
 
   const tryLogin = async (emailid, pwd) => {
@@ -41,14 +41,19 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
 
     if (!email || !password) {
-      setError('Please enter email and password.')
+      showWarning('Please enter email and password.')
+      return
+    }
+
+    if (!email.includes('@')) {
+      showWarning('Please enter a valid email address.')
       return
     }
 
     setLoading(true)
+    showInfo('Authenticating...')
     try {
       const encEmail = encryptEmail(email)
       // Try encrypted email+password first (registered users), then plain (legacy admin)
@@ -64,17 +69,19 @@ const Login = () => {
         // Only admin (role 2) is allowed to login
         if (roleId !== 2) {
           console.log('Unauthorized access')
+          showError('Unauthorized access')
           setShowUnauthorized(true)
           return
         }
 
         storeSession(res.data, email.toLowerCase(), roleId)
-        navigate('/dashboard')
+        showSuccess('Login successful! Redirecting to dashboard...')
+        setTimeout(() => navigate('/dashboard'), 500)
       } else {
-        setError('Invalid email or password.')
+        showError('Invalid email or password.')
       }
     } catch {
-      setError('Network error. Please try again.')
+      showError('Network error. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -91,7 +98,6 @@ const Login = () => {
                   <CForm onSubmit={handleSubmit}>
                     <h1>Login</h1>
                     <p className="text-body-secondary">Sign In to your account</p>
-                    {error && <CAlert color="danger">{error}</CAlert>}
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
                         <CIcon icon={cilUser} />
