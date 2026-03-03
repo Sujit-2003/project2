@@ -52,12 +52,11 @@ const Login = () => {
       }
 
       if (res && res.data) {
-        const userId = Number(res.data.user_id ?? res.data.userId ?? res.data.id)
-        // Admin is user_id 1, all others are parents (role 2)
-        const effectiveRole = userId === 1 ? 1 : 2
-        storeSession(res.data, email.toLowerCase(), effectiveRole)
+        // Backend now returns correct roleid: 2=admin, 1=user
+        const roleId = Number(res.data.roleid ?? res.data.roleId ?? res.data.role_id ?? 1)
+        storeSession(res.data, email.toLowerCase(), roleId)
 
-        if (effectiveRole === 1) {
+        if (roleId === 2) {
           navigate('/dashboard')
         } else {
           navigate('/patients')

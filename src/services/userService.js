@@ -4,7 +4,7 @@ import { encrypt, encryptEmail } from './encryptionService'
 
 const API_URL = environment.apiBaseUrl
 
-export async function registerUser({ name, emailId, contactNumber, password }) {
+export async function registerUser({ name, emailId, contactNumber, password, countryid }) {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -13,7 +13,8 @@ export async function registerUser({ name, emailId, contactNumber, password }) {
       emailid: encryptEmail(emailId),
       upassword: encrypt(password),
       cnumber: contactNumber,
-      roleId: 2,
+      roleid: 1,
+      countryid: countryid || 1,
       createdby: getAdminId(),
     }),
   })
@@ -21,7 +22,7 @@ export async function registerUser({ name, emailId, contactNumber, password }) {
 }
 
 export async function getUsers(roleId) {
-  const response = await fetch(`${API_URL}/login/${roleId}`, {
+  const response = await fetch(`${API_URL}/users/role/${roleId}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   })

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -16,9 +16,9 @@ import {
   CAlert,
 } from '@coreui/react'
 import { addPatient } from '../../services/patientService'
-import { getUmId } from '../../services/authService'
 
-const AddPatient = () => {
+const AddPatientForUser = () => {
+  const { id } = useParams()
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +59,7 @@ const AddPatient = () => {
         p_relationship: form.relationship,
         about_patient: form.about,
         health_history: form.healthHistory,
-        um_id: getUmId(),
+        um_id: Number(id),
         contact_numb: form.contactNumber,
         contact_number: form.contactNumber,
         country_id: Number(form.country_id),
@@ -67,7 +67,7 @@ const AddPatient = () => {
       const res = await addPatient(payload)
       if (Number(res.code) === 0) {
         setSuccess(res.message || 'Patient added successfully!')
-        setTimeout(() => navigate('/patients'), 1500)
+        setTimeout(() => navigate(`/users/${id}`), 1500)
       } else {
         setError(res.message || 'Failed to add patient.')
       }
@@ -79,11 +79,11 @@ const AddPatient = () => {
   }
 
   return (
-    <CRow>
-      <CCol xs={12}>
+    <CRow className="justify-content-center">
+      <CCol lg={10}>
         <CCard className="mb-4">
           <CCardHeader>
-            <strong>Add Patient</strong>
+            <strong>Add Patient for User #{id}</strong>
           </CCardHeader>
           <CCardBody>
             {error && <CAlert color="danger">{error}</CAlert>}
@@ -164,11 +164,19 @@ const AddPatient = () => {
                   </div>
                 </CCol>
               </CRow>
+              <CRow>
+                <CCol md={12}>
+                  <div className="mb-3">
+                    <CFormLabel>Services (coming soon)</CFormLabel>
+                    <CFormInput disabled placeholder="Multi-select services — backend not ready" />
+                  </div>
+                </CCol>
+              </CRow>
               <div className="d-flex gap-2 mt-2">
                 <CButton color="primary" type="submit" disabled={submitting}>
                   {submitting ? <CSpinner size="sm" /> : 'Add Patient'}
                 </CButton>
-                <CButton color="secondary" onClick={() => navigate('/patients')}>
+                <CButton color="secondary" onClick={() => navigate(`/users/${id}`)}>
                   Cancel
                 </CButton>
               </div>
@@ -180,4 +188,4 @@ const AddPatient = () => {
   )
 }
 
-export default AddPatient
+export default AddPatientForUser

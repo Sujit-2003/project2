@@ -12,6 +12,7 @@ import {
   cilNotes,
   cilBell,
   cilCalculator,
+  cilMedicalCross,
 } from '@coreui/icons'
 import { CNavItem, CNavGroup, CNavTitle } from '@coreui/react'
 
@@ -31,6 +32,12 @@ const adminNav = [
     name: 'Users',
     to: '/users',
     icon: <CIcon icon={cilPeople} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Symptoms',
+    to: '/symptoms',
+    icon: <CIcon icon={cilMedicalCross} customClassName="nav-icon" />,
   },
   {
     component: CNavTitle,
@@ -116,7 +123,7 @@ const parentNav = [
 ]
 
 export function getNavItemsByRole(roleId) {
-  if (Number(roleId) === 1) return adminNav
+  if (Number(roleId) === 2) return adminNav
   return parentNav
 }
 

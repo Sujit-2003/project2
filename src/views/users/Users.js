@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -12,47 +13,54 @@ import {
   CTableHeaderCell,
   CTableRow,
   CButton,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CForm,
-  CFormInput,
-  CFormLabel,
   CSpinner,
   CAlert,
+  CAvatar,
+  CFormInput,
+  CPagination,
+  CPaginationItem,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus, cilSearch } from '@coreui/icons'
-import { getUsers, registerUser } from '../../services/userService'
+import { cilPlus, cilUser } from '@coreui/icons'
+import { getUsers } from '../../services/userService'
 import { getAdminId } from '../../services/authService'
+import useTableControls from '../../hooks/useTableControls'
+
+function timeAgo(dateStr) {
+  if (!dateStr) return 'N/A'
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return 'N/A'
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  const months = Math.floor(days / 30)
+  return `${months}mo ago`
+}
 
 const Users = () => {
+  const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Register User modal
-  const [registerVisible, setRegisterVisible] = useState(false)
-  const [regSubmitting, setRegSubmitting] = useState(false)
-  const [regError, setRegError] = useState('')
-  const [regSuccess, setRegSuccess] = useState('')
-  const [regForm, setRegForm] = useState({
-    name: '',
-    emailId: '',
-    contactNumber: '',
-    password: '',
-    confirmPassword: '',
-  })
-
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    searchTerm,
+    setCurrentPage,
+    setSearchTerm,
+  } = useTableControls(users, ['username', 'name', 'emailid', 'email', 'cnumber'])
 
   const loadUsers = async () => {
     setLoading(true)
     setError('')
     try {
-      // API stores all registered users under role 1
-      // Fetch role 1 users and filter out the admin
       const res = await getUsers(1)
       let allUsers = []
       if (Array.isArray(res)) {
@@ -66,7 +74,6 @@ const Users = () => {
         setLoading(false)
         return
       }
-      // Filter out the logged-in admin from the list
       const adminId = getAdminId()
       const filtered = allUsers.filter((u) => u.id !== adminId)
       setUsers(filtered)
@@ -81,62 +88,27 @@ const Users = () => {
     loadUsers()
   }, [])
 
-  const handleRegChange = (e) => {
-    setRegForm({ ...regForm, [e.target.name]: e.target.value })
-  }
-
-  const handleRegister = async (e) => {
-    e.preventDefault()
-    setRegError('')
-    setRegSuccess('')
-
-    if (!regForm.name || !regForm.emailId || !regForm.contactNumber || !regForm.password) {
-      setRegError('All fields are required.')
-      return
-    }
-    if (regForm.password !== regForm.confirmPassword) {
-      setRegError('Passwords do not match.')
-      return
-    }
-
-    setRegSubmitting(true)
-    try {
-      const res = await registerUser({
-        name: regForm.name,
-        emailId: regForm.emailId,
-        contactNumber: regForm.contactNumber,
-        password: regForm.password,
-      })
-      if (Number(res.code) === 0) {
-        setRegSuccess(res.message || 'User registered successfully!')
-        setRegForm({ name: '', emailId: '', contactNumber: '', password: '', confirmPassword: '' })
-        setTimeout(() => {
-          setRegisterVisible(false)
-          setRegSuccess('')
-          loadUsers()
-        }, 1500)
-      } else {
-        setRegError(res.message || 'Registration failed.')
-      }
-    } catch {
-      setRegError('Network error during registration.')
-    } finally {
-      setRegSubmitting(false)
-    }
-  }
-
   return (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
           <CCardHeader className="d-flex justify-content-between align-items-center">
             <strong>Users</strong>
-            <CButton color="primary" size="sm" onClick={() => setRegisterVisible(true)}>
+            <CButton color="primary" size="sm" onClick={() => navigate('/users/register')}>
               <CIcon icon={cilPlus} className="me-1" />
               Register User
             </CButton>
           </CCardHeader>
           <CCardBody>
+            <CFormInput
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-3"
+              style={{ maxWidth: '300px' }}
+            />
+
             {loading && (
               <div className="text-center py-4">
                 <CSpinner color="primary" />
@@ -144,115 +116,91 @@ const Users = () => {
             )}
             {error && <CAlert color="danger">{error}</CAlert>}
             {!loading && !error && (
-              <CTable hover responsive>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>Parent Name</CTableHeaderCell>
-                    <CTableHeaderCell>Email</CTableHeaderCell>
-                    <CTableHeaderCell>Contact</CTableHeaderCell>
-                    <CTableHeaderCell>Status</CTableHeaderCell>
-                    <CTableHeaderCell>Created</CTableHeaderCell>
-                    <CTableHeaderCell>Details</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {users.length === 0 ? (
+              <>
+                <CTable hover responsive>
+                  <CTableHead>
                     <CTableRow>
-                      <CTableDataCell colSpan={7} className="text-center text-muted">
-                        No users found.
-                      </CTableDataCell>
+                      <CTableHeaderCell>#</CTableHeaderCell>
+                      <CTableHeaderCell>Photo</CTableHeaderCell>
+                      <CTableHeaderCell>Username</CTableHeaderCell>
+                      <CTableHeaderCell>Email ID</CTableHeaderCell>
+                      <CTableHeaderCell>Register Date</CTableHeaderCell>
+                      <CTableHeaderCell>Country</CTableHeaderCell>
+                      <CTableHeaderCell>Activity</CTableHeaderCell>
+                      <CTableHeaderCell>Details</CTableHeaderCell>
                     </CTableRow>
-                  ) : (
-                    users.map((user, index) => (
-                      <CTableRow key={user.id || index}>
-                        <CTableDataCell>{index + 1}</CTableDataCell>
-                        <CTableDataCell>{user.username || user.name || '-'}</CTableDataCell>
-                        <CTableDataCell>{user.emailid || user.email || '-'}</CTableDataCell>
-                        <CTableDataCell>{user.cnumber || user.contactNumber || '-'}</CTableDataCell>
-                        <CTableDataCell>{user.ustatus || user.status || '-'}</CTableDataCell>
-                        <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
-                        <CTableDataCell>
-                          <CIcon
-                            icon={cilSearch}
-                            className="text-primary"
-                            style={{ cursor: 'pointer' }}
-                          />
+                  </CTableHead>
+                  <CTableBody>
+                    {paginatedData.length === 0 ? (
+                      <CTableRow>
+                        <CTableDataCell colSpan={8} className="text-center text-muted">
+                          No users found.
                         </CTableDataCell>
                       </CTableRow>
-                    ))
-                  )}
-                </CTableBody>
-              </CTable>
+                    ) : (
+                      paginatedData.map((user, index) => (
+                        <CTableRow key={user.id || index}>
+                          <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
+                          <CTableDataCell>
+                            <CAvatar color="secondary" size="md">
+                              <CIcon icon={cilUser} />
+                            </CAvatar>
+                          </CTableDataCell>
+                          <CTableDataCell>{user.username || user.name || '-'}</CTableDataCell>
+                          <CTableDataCell>{user.emailid || user.email || '-'}</CTableDataCell>
+                          <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
+                          <CTableDataCell>{user.countryid || user.country || '-'}</CTableDataCell>
+                          <CTableDataCell>{timeAgo(user.lastLogin || user.last_login)}</CTableDataCell>
+                          <CTableDataCell>
+                            <CButton
+                              color="primary"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/users/${user.id}`)}
+                              title="View Details"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            </CButton>
+                          </CTableDataCell>
+                        </CTableRow>
+                      ))
+                    )}
+                  </CTableBody>
+                </CTable>
+
+                {totalPages > 1 && (
+                  <CPagination className="justify-content-center">
+                    <CPaginationItem
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      Previous
+                    </CPaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <CPaginationItem
+                        key={i + 1}
+                        active={currentPage === i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                      >
+                        {i + 1}
+                      </CPaginationItem>
+                    ))}
+                    <CPaginationItem
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      Next
+                    </CPaginationItem>
+                  </CPagination>
+                )}
+              </>
             )}
           </CCardBody>
         </CCard>
       </CCol>
-
-      {/* Register User Modal */}
-      <CModal visible={registerVisible} onClose={() => setRegisterVisible(false)}>
-        <CModalHeader>
-          <CModalTitle>Register User</CModalTitle>
-        </CModalHeader>
-        <CForm onSubmit={handleRegister}>
-          <CModalBody>
-            {regError && <CAlert color="danger">{regError}</CAlert>}
-            {regSuccess && <CAlert color="success">{regSuccess}</CAlert>}
-            <div className="mb-3">
-              <CFormLabel>Name</CFormLabel>
-              <CFormInput name="name" value={regForm.name} onChange={handleRegChange} required />
-            </div>
-            <div className="mb-3">
-              <CFormLabel>Email</CFormLabel>
-              <CFormInput
-                type="email"
-                name="emailId"
-                value={regForm.emailId}
-                onChange={handleRegChange}
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <CFormLabel>Contact Number</CFormLabel>
-              <CFormInput
-                name="contactNumber"
-                value={regForm.contactNumber}
-                onChange={handleRegChange}
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <CFormLabel>Password</CFormLabel>
-              <CFormInput
-                type="password"
-                name="password"
-                value={regForm.password}
-                onChange={handleRegChange}
-                required
-              />
-            </div>
-            <div className="mb-3">
-              <CFormLabel>Confirm Password</CFormLabel>
-              <CFormInput
-                type="password"
-                name="confirmPassword"
-                value={regForm.confirmPassword}
-                onChange={handleRegChange}
-                required
-              />
-            </div>
-          </CModalBody>
-          <CModalFooter>
-            <CButton color="secondary" onClick={() => setRegisterVisible(false)}>
-              Cancel
-            </CButton>
-            <CButton color="primary" type="submit" disabled={regSubmitting}>
-              {regSubmitting ? <CSpinner size="sm" /> : 'Register'}
-            </CButton>
-          </CModalFooter>
-        </CForm>
-      </CModal>
-
     </CRow>
   )
 }

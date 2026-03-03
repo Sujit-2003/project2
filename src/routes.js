@@ -2,8 +2,14 @@ import React from 'react'
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Users = React.lazy(() => import('./views/users/Users'))
+const RegisterUser = React.lazy(() => import('./views/users/RegisterUser'))
+const UserDetails = React.lazy(() => import('./views/users/UserDetails'))
+const AddPatientForUser = React.lazy(() => import('./views/users/AddPatientForUser'))
 const Patients = React.lazy(() => import('./views/patients/Patients'))
 const AddPatient = React.lazy(() => import('./views/patients/AddPatient'))
+const Symptoms = React.lazy(() => import('./views/symptoms/Symptoms'))
+const AddSymptom = React.lazy(() => import('./views/symptoms/AddSymptom'))
+const ChangePassword = React.lazy(() => import('./views/pages/ChangePassword'))
 
 // Demo views
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
@@ -19,10 +25,17 @@ const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
-  // SUJI routes
-  { path: '/users', name: 'Users', element: Users },
+  // SUJI routes — admin only
+  { path: '/users/register', name: 'Register User', element: RegisterUser, adminOnly: true },
+  { path: '/users/:id/add-patient', name: 'Add Patient for User', element: AddPatientForUser, adminOnly: true },
+  { path: '/users/:id', name: 'User Details', element: UserDetails, adminOnly: true },
+  { path: '/users', name: 'Users', element: Users, adminOnly: true },
+  { path: '/symptoms/add', name: 'Add Symptom', element: AddSymptom, adminOnly: true },
+  { path: '/symptoms', name: 'Symptoms', element: Symptoms, adminOnly: true },
+  // SUJI routes — all roles
   { path: '/patients', name: 'Patients', element: Patients, exact: true },
   { path: '/patients/add', name: 'Add Patient', element: AddPatient },
+  { path: '/change-password', name: 'Change Password', element: ChangePassword },
   // Demo routes
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
