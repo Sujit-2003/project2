@@ -17,7 +17,7 @@ export async function getTermsAndConditions() {
     return {
       title: 'Terms and Conditions',
       content:
-        'Welcome to SUJI Health Platform.\n\n' +
+        'Welcome to our Health Platform.\n\n' +
         '1. Acceptance of Terms\nBy accessing and using this platform, you accept and agree to be bound by the terms and provisions of this agreement.\n\n' +
         '2. Privacy Policy\nYour personal data will be collected and processed in accordance with our Privacy Policy. We are committed to protecting your health information.\n\n' +
         '3. User Responsibilities\nYou are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.\n\n' +
@@ -31,7 +31,7 @@ export async function getTermsAndConditions() {
     return {
       title: 'Terms and Conditions',
       content:
-        'Welcome to SUJI Health Platform.\n\n' +
+        'Welcome to our Health Platform.\n\n' +
         '1. By using this platform, you agree to our terms of service.\n' +
         '2. Your personal and health data will be handled securely.\n' +
         '3. You are responsible for the accuracy of information you provide.\n' +
