@@ -26,6 +26,36 @@ import { getUsers } from '../../services/userService'
 import { getAdminId } from '../../services/authService'
 import useTableControls from '../../hooks/useTableControls'
 
+// Map country calling code prefix to country code (ISO 3166-1 alpha-2) for flag display
+const pinCodeToCountry = [
+  { prefix: '+91', code: 'in', name: 'India' },
+  { prefix: '+1', code: 'us', name: 'USA' },
+  { prefix: '+44', code: 'gb', name: 'UK' },
+  { prefix: '+61', code: 'au', name: 'Australia' },
+  { prefix: '+971', code: 'ae', name: 'UAE' },
+  { prefix: '+65', code: 'sg', name: 'Singapore' },
+  { prefix: '+49', code: 'de', name: 'Germany' },
+  { prefix: '+33', code: 'fr', name: 'France' },
+  { prefix: '+81', code: 'jp', name: 'Japan' },
+  { prefix: '+86', code: 'cn', name: 'China' },
+  { prefix: '+55', code: 'br', name: 'Brazil' },
+  { prefix: '+7', code: 'ru', name: 'Russia' },
+  { prefix: '+82', code: 'kr', name: 'South Korea' },
+  { prefix: '+39', code: 'it', name: 'Italy' },
+  { prefix: '+34', code: 'es', name: 'Spain' },
+]
+
+function getCountryFromContact(contact) {
+  if (!contact) return null
+  const str = String(contact).trim()
+  // Sort by prefix length descending so +971 matches before +9
+  const sorted = [...pinCodeToCountry].sort((a, b) => b.prefix.length - a.prefix.length)
+  for (const entry of sorted) {
+    if (str.startsWith(entry.prefix)) return entry
+  }
+  return null
+}
+
 function timeAgo(dateStr) {
   if (!dateStr) return 'N/A'
   const date = new Date(dateStr)
@@ -138,35 +168,53 @@ const Users = () => {
                         </CTableDataCell>
                       </CTableRow>
                     ) : (
-                      paginatedData.map((user, index) => (
-                        <CTableRow key={user.id || index}>
-                          <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
-                          <CTableDataCell>
-                            <CAvatar color="secondary" size="md">
-                              <CIcon icon={cilUser} />
-                            </CAvatar>
-                          </CTableDataCell>
-                          <CTableDataCell>{user.username || user.name || '-'}</CTableDataCell>
-                          <CTableDataCell>{user.emailid || user.email || '-'}</CTableDataCell>
-                          <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
-                          <CTableDataCell>{user.countryid || user.country || '-'}</CTableDataCell>
-                          <CTableDataCell>{timeAgo(user.lastLogin || user.last_login)}</CTableDataCell>
-                          <CTableDataCell>
-                            <CButton
-                              color="primary"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/users/${user.id}`)}
-                              title="View Details"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                              </svg>
-                            </CButton>
-                          </CTableDataCell>
-                        </CTableRow>
-                      ))
+                      paginatedData.map((user, index) => {
+                        const country = getCountryFromContact(user.cnumber || user.contactNumber)
+                        return (
+                          <CTableRow key={user.id || index}>
+                            <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
+                            <CTableDataCell>
+                              <CAvatar color="secondary" size="md">
+                                <CIcon icon={cilUser} />
+                              </CAvatar>
+                            </CTableDataCell>
+                            <CTableDataCell>{user.username || user.name || '-'}</CTableDataCell>
+                            <CTableDataCell>{user.emailid || user.email || '-'}</CTableDataCell>
+                            <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
+                            <CTableDataCell>
+                              {country ? (
+                                <span className="d-flex align-items-center gap-1">
+                                  <img
+                                    src={`https://flagcdn.com/w40/${country.code}.png`}
+                                    alt={country.name}
+                                    width="24"
+                                    height="16"
+                                    style={{ objectFit: 'cover', borderRadius: '2px' }}
+                                  />
+                                  {country.name}
+                                </span>
+                              ) : (
+                                user.countryid || user.country || '-'
+                              )}
+                            </CTableDataCell>
+                            <CTableDataCell>{timeAgo(user.lastLogin || user.last_login)}</CTableDataCell>
+                            <CTableDataCell>
+                              <CButton
+                                color="primary"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/users/${user.id}`)}
+                                title="View Details"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                              </CButton>
+                            </CTableDataCell>
+                          </CTableRow>
+                        )
+                      })
                     )}
                   </CTableBody>
                 </CTable>

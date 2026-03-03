@@ -14,6 +14,11 @@ import {
   CRow,
   CSpinner,
   CAlert,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
@@ -26,6 +31,7 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showUnauthorized, setShowUnauthorized] = useState(false)
 
   const tryLogin = async (emailid, pwd) => {
     const res = await adminLogin({ emailid, password: pwd })
@@ -54,13 +60,16 @@ const Login = () => {
       if (res && res.data) {
         // Backend now returns correct roleid: 2=admin, 1=user
         const roleId = Number(res.data.roleid ?? res.data.roleId ?? res.data.role_id ?? 1)
-        storeSession(res.data, email.toLowerCase(), roleId)
 
-        if (roleId === 2) {
-          navigate('/dashboard')
-        } else {
-          navigate('/patients')
+        // Only admin (role 2) is allowed to login
+        if (roleId !== 2) {
+          console.log('Unauthorized access')
+          setShowUnauthorized(true)
+          return
         }
+
+        storeSession(res.data, email.toLowerCase(), roleId)
+        navigate('/dashboard')
       } else {
         setError('Invalid email or password.')
       }
@@ -121,6 +130,23 @@ const Login = () => {
           </CCol>
         </CRow>
       </CContainer>
+
+      {/* Unauthorized Access Modal */}
+      <CModal visible={showUnauthorized} onClose={() => setShowUnauthorized(false)} backdrop="static">
+        <CModalHeader closeButton={false}>
+          <CModalTitle>Unauthorized Access</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <p className="mb-0">
+            You do not have admin privileges. Only administrators are allowed to login to this panel.
+          </p>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="danger" onClick={() => setShowUnauthorized(false)}>
+            OK
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </div>
   )
 }

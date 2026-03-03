@@ -15,9 +15,14 @@ import {
   CSpinner,
   CAlert,
   CInputGroup,
-  CInputGroupText,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react'
 import { registerUser } from '../../services/userService'
+import { getTermsAndConditions } from '../../services/termsService'
 
 const countryCodes = [
   { code: '+91', label: '+91 (India)', countryid: 1 },
@@ -38,6 +43,12 @@ const RegisterUser = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
+
+  // Terms modal state
+  const [termsVisible, setTermsVisible] = useState(false)
+  const [termsContent, setTermsContent] = useState(null)
+  const [termsLoading, setTermsLoading] = useState(false)
+
   const [form, setForm] = useState({
     name: '',
     emailId: '',
@@ -49,6 +60,19 @@ const RegisterUser = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleOpenTerms = async () => {
+    setTermsVisible(true)
+    setTermsLoading(true)
+    try {
+      const data = await getTermsAndConditions()
+      setTermsContent(data)
+    } catch {
+      setTermsContent({ title: 'Terms and Conditions', content: 'Failed to load terms.' })
+    } finally {
+      setTermsLoading(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -65,7 +89,7 @@ const RegisterUser = () => {
       return
     }
     if (!termsAccepted) {
-      setError('You must accept the Terms and Conditions.')
+      setError('You must accept Terms and Conditions to register.')
       return
     }
 
@@ -180,9 +204,23 @@ const RegisterUser = () => {
               <div className="mb-3">
                 <CFormCheck
                   id="termsCheck"
-                  label="I agree to the Terms and Conditions"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
+                  label={
+                    <span>
+                      I agree to the{' '}
+                      <a
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleOpenTerms()
+                        }}
+                        style={{ textDecoration: 'underline' }}
+                      >
+                        Terms and Conditions
+                      </a>
+                    </span>
+                  }
                 />
               </div>
               <div className="d-flex gap-2">
@@ -201,6 +239,29 @@ const RegisterUser = () => {
           </CCardBody>
         </CCard>
       </CCol>
+
+      {/* Terms and Conditions Modal */}
+      <CModal visible={termsVisible} onClose={() => setTermsVisible(false)} size="lg">
+        <CModalHeader>
+          <CModalTitle>{termsContent?.title || 'Terms and Conditions'}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {termsLoading ? (
+            <div className="text-center py-4">
+              <CSpinner color="primary" />
+            </div>
+          ) : (
+            <div style={{ whiteSpace: 'pre-wrap', maxHeight: '400px', overflowY: 'auto' }}>
+              {termsContent?.content || 'Loading...'}
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="primary" onClick={() => setTermsVisible(false)}>
+            Close
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </CRow>
   )
 }
