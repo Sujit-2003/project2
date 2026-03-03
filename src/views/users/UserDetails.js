@@ -15,6 +15,8 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft, cilPlus, cilUser } from '@coreui/icons'
 import { getUsers } from '../../services/userService'
+import { decryptSafe } from '../../services/encryptionService'
+import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
 
 const UserDetails = () => {
   const { id } = useParams()
@@ -76,7 +78,7 @@ const UserDetails = () => {
               </CAvatar>
               <div>
                 <h4 className="mb-1">{user.username || user.name || '-'}</h4>
-                <span className="text-body-secondary">{user.emailid || user.email || '-'}</span>
+                <span className="text-body-secondary">{decryptSafe(user.emailid || user.email)}</span>
               </div>
             </div>
 
@@ -98,7 +100,26 @@ const UserDetails = () => {
             </CRow>
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Country</CCol>
-              <CCol sm={8}>{user.countryid || user.country || '-'}</CCol>
+              <CCol sm={8}>
+                {(() => {
+                  const country = getCountryFromContact(user.cnumber || user.contactNumber)
+                  if (country) {
+                    return (
+                      <span className="d-flex align-items-center gap-2">
+                        <img
+                          src={getFlagUrl(country.code)}
+                          alt={country.name}
+                          width="24"
+                          height="16"
+                          style={{ objectFit: 'cover', borderRadius: '2px' }}
+                        />
+                        {country.name}
+                      </span>
+                    )
+                  }
+                  return user.countryid || user.country || '-'
+                })()}
+              </CCol>
             </CRow>
 
             <div className="mt-4">
