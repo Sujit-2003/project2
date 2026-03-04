@@ -121,7 +121,30 @@ const AddPatientForUser = () => {
                 <CCol md={6}>
                   <div className="mb-3">
                     <CFormLabel>Relationship</CFormLabel>
-                    <CFormInput name="relationship" value={form.relationship} onChange={handleChange} />
+                    <CFormSelect name="relationship" value={form.relationship} onChange={handleChange}>
+                      <option value="">Select Relationship</option>
+                      <option value="Self">Self</option>
+                      <option value="Father">Father</option>
+                      <option value="Mother">Mother</option>
+                      <option value="Son">Son</option>
+                      <option value="Daughter">Daughter</option>
+                      <option value="Husband">Husband</option>
+                      <option value="Wife">Wife</option>
+                      <option value="Brother">Brother</option>
+                      <option value="Sister">Sister</option>
+                      <option value="Grandfather">Grandfather</option>
+                      <option value="Grandmother">Grandmother</option>
+                      <option value="Grandson">Grandson</option>
+                      <option value="Granddaughter">Granddaughter</option>
+                      <option value="Uncle">Uncle</option>
+                      <option value="Aunt">Aunt</option>
+                      <option value="Nephew">Nephew</option>
+                      <option value="Niece">Niece</option>
+                      <option value="Cousin">Cousin</option>
+                      <option value="Friend">Friend</option>
+                      <option value="Guardian">Guardian</option>
+                      <option value="Other">Other</option>
+                    </CFormSelect>
                   </div>
                 </CCol>
                 <CCol md={6}>
@@ -156,14 +179,6 @@ const AddPatientForUser = () => {
                   <div className="mb-3">
                     <CFormLabel>Health History</CFormLabel>
                     <CFormTextarea name="healthHistory" value={form.healthHistory} onChange={handleChange} rows={2} />
-                  </div>
-                </CCol>
-              </CRow>
-              <CRow>
-                <CCol md={12}>
-                  <div className="mb-3">
-                    <CFormLabel>Services (coming soon)</CFormLabel>
-                    <CFormInput disabled placeholder="Multi-select services — backend not ready" />
                   </div>
                 </CCol>
               </CRow>
