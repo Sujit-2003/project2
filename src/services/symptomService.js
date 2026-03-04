@@ -23,11 +23,11 @@ function getISTDateTime() {
 }
 
 export async function addSymptom({ symptom_name, severity_level, description }) {
-  const cdate = getISTDateTime()
+  const created_at = getISTDateTime()
   const response = await fetch(`${API_URL}/add-symptom`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ symptom_name, severity_level, description, cdate }),
+    body: JSON.stringify({ symptom_name, severity_level, description, created_at }),
   })
   return safeJson(response)
 }

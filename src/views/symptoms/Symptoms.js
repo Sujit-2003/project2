@@ -120,7 +120,7 @@ const Symptoms = () => {
                             </CBadge>
                           </CTableDataCell>
                           <CTableDataCell>{s.description || '-'}</CTableDataCell>
-                          <CTableDataCell>{s.cdate || s.created_date || '-'}</CTableDataCell>
+                          <CTableDataCell>{s.created_at || '-'}</CTableDataCell>
                         </CTableRow>
                       ))
                     )}

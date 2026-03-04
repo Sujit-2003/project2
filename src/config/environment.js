@@ -1,6 +1,6 @@
 const environment = {
   apiBaseUrl: 'https://api.baltech.digital/api',
-  authToken: 'BN8xNkztpyM4jrEUVap7VN8LVLi4IVSIyEeLIo1xK+w=',
+  authToken: 'tdCpvHAVcWQH7KNyrD3gAnByLRHwpa5PXSrD9nGwBAQ=',
 }
 
 export default environment

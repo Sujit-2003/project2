@@ -4,7 +4,7 @@ import { getAuthHeaders, safeJson } from './authService'
 const API_URL = environment.apiBaseUrl
 
 export async function addPatient(patientData) {
-  const response = await fetch(`${API_URL}/add-patient`, {
+  const response = await fetch(`${API_URL}/patients`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(patientData),

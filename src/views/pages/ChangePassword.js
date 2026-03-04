@@ -13,6 +13,11 @@ import {
   CSpinner,
 } from '@coreui/react'
 import { useToast } from '../../components/ToastContext'
+import { getAuthHeaders, getAdminId, safeJson } from '../../services/authService'
+import { encrypt } from '../../services/encryptionService'
+import environment from '../../config/environment'
+
+const API_URL = environment.apiBaseUrl
 
 const ChangePassword = () => {
   const navigate = useNavigate()
@@ -45,12 +50,48 @@ const ChangePassword = () => {
     }
 
     setSubmitting(true)
-    // Mock submit — no backend endpoint yet
-    setTimeout(() => {
+    try {
+      const userId = getAdminId()
+
+      // Try with plain passwords first (legacy admin), then encrypted
+      let res = await safeJson(
+        await fetch(`${API_URL}/change-password/${userId}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            old_password: form.oldPassword,
+            new_password: form.newPassword,
+            confirm_password: form.confirmPassword,
+          }),
+        }),
+      )
+
+      if (Number(res.code) !== 0) {
+        // Retry with encrypted passwords
+        res = await safeJson(
+          await fetch(`${API_URL}/change-password/${userId}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              old_password: encrypt(form.oldPassword),
+              new_password: encrypt(form.newPassword),
+              confirm_password: encrypt(form.confirmPassword),
+            }),
+          }),
+        )
+      }
+
+      if (Number(res.code) === 0) {
+        showSuccess(res.message || 'Password changed successfully!')
+        setForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
+      } else {
+        showError(res.message || 'Failed to change password.')
+      }
+    } catch {
+      showError('Failed to change password. Please try again.')
+    } finally {
       setSubmitting(false)
-      showSuccess('Password changed successfully!')
-      setForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
-    }, 1000)
+    }
   }
 
   return (
