@@ -20,10 +20,14 @@ const pinCodeToCountry = [
 export function getCountryFromContact(contact) {
   if (!contact) return null
   const str = String(contact).trim()
-  // Sort by prefix length descending so +971 matches before +9
+  // Sort by prefix length descending so +971 matches before +9, +91 before +1
   const sorted = [...pinCodeToCountry].sort((a, b) => b.prefix.length - a.prefix.length)
   for (const entry of sorted) {
     if (str.startsWith(entry.prefix)) return entry
+  }
+  // Fallback: 10-digit number starting with 6-9 is likely Indian
+  if (/^[6-9]\d{9}$/.test(str)) {
+    return { prefix: '+91', code: 'in', name: 'India' }
   }
   return null
 }
