@@ -15,7 +15,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft, cilPlus, cilUser } from '@coreui/icons'
 import { getUsers } from '../../services/userService'
-import { decryptSafe } from '../../services/encryptionService'
+import { decryptSafe, decryptField } from '../../services/encryptionService'
 import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
 
 const UserDetails = () => {
@@ -77,14 +77,14 @@ const UserDetails = () => {
                 <CIcon icon={cilUser} size="xl" />
               </CAvatar>
               <div>
-                <h4 className="mb-1">{user.username || user.name || '-'}</h4>
+                <h4 className="mb-1">{decryptField(user.username || user.name)}</h4>
                 <span className="text-body-secondary">{decryptSafe(user.emailid || user.email)}</span>
               </div>
             </div>
 
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Contact</CCol>
-              <CCol sm={8}>{user.cnumber || user.contactNumber || '-'}</CCol>
+              <CCol sm={8}>{decryptField(user.cnumber || user.contactNumber)}</CCol>
             </CRow>
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Status</CCol>
@@ -102,7 +102,7 @@ const UserDetails = () => {
               <CCol sm={4} className="fw-semibold">Country</CCol>
               <CCol sm={8}>
                 {(() => {
-                  const country = getCountryFromContact(user.cnumber || user.contactNumber)
+                  const country = getCountryFromContact(decryptField(user.cnumber || user.contactNumber))
                   if (country) {
                     return (
                       <span className="d-flex align-items-center gap-2">

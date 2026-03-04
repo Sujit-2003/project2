@@ -9,10 +9,10 @@ export async function registerUser({ name, emailId, contactNumber, password, cou
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({
-      username: name,
+      username: encrypt(name),
       emailid: encryptEmail(emailId),
       upassword: encrypt(password),
-      cnumber: contactNumber,
+      cnumber: encrypt(contactNumber),
       roleid: 1,
       countryid: countryid || 1,
       createdby: getAdminId(),

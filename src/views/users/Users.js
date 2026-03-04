@@ -24,7 +24,7 @@ import CIcon from '@coreui/icons-react'
 import { cilPlus, cilUser } from '@coreui/icons'
 import { getUsers } from '../../services/userService'
 import { getAdminId } from '../../services/authService'
-import { decryptSafe } from '../../services/encryptionService'
+import { decryptSafe, decryptField } from '../../services/encryptionService'
 import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
 import useTableControls from '../../hooks/useTableControls'
 
@@ -141,7 +141,8 @@ const Users = () => {
                       </CTableRow>
                     ) : (
                       paginatedData.map((user, index) => {
-                        const country = getCountryFromContact(user.cnumber || user.contactNumber)
+                        const decryptedCnumber = decryptField(user.cnumber || user.contactNumber)
+                        const country = getCountryFromContact(decryptedCnumber)
                         return (
                           <CTableRow key={user.id || index}>
                             <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
@@ -150,7 +151,7 @@ const Users = () => {
                                 <CIcon icon={cilUser} />
                               </CAvatar>
                             </CTableDataCell>
-                            <CTableDataCell>{user.username || user.name || '-'}</CTableDataCell>
+                            <CTableDataCell>{decryptField(user.username || user.name)}</CTableDataCell>
                             <CTableDataCell>{decryptSafe(user.emailid || user.email)}</CTableDataCell>
                             <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
                             <CTableDataCell>

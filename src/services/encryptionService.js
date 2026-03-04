@@ -36,6 +36,11 @@ export function decryptSafe(text) {
   return decrypt(text)
 }
 
+export function decryptField(text) {
+  if (!text) return '-'
+  return decrypt(text)
+}
+
 export function encryptEmail(email) {
   return encrypt(email.toLowerCase())
 }
