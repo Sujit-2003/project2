@@ -6,6 +6,7 @@ const RegisterUser = React.lazy(() => import('./views/users/RegisterUser'))
 const UserDetails = React.lazy(() => import('./views/users/UserDetails'))
 const AddPatientForUser = React.lazy(() => import('./views/users/AddPatientForUser'))
 const Patients = React.lazy(() => import('./views/patients/Patients'))
+const PatientDetails = React.lazy(() => import('./views/patients/PatientDetails'))
 const AddPatient = React.lazy(() => import('./views/patients/AddPatient'))
 const Symptoms = React.lazy(() => import('./views/symptoms/Symptoms'))
 const AddSymptom = React.lazy(() => import('./views/symptoms/AddSymptom'))
@@ -35,6 +36,7 @@ const routes = [
   // SUJI routes — all roles
   { path: '/patients', name: 'Patients', element: Patients, exact: true },
   { path: '/patients/add', name: 'Add Patient', element: AddPatient },
+  { path: '/patients/:id', name: 'Patient Details', element: PatientDetails },
   { path: '/change-password', name: 'Change Password', element: ChangePassword },
   // Demo routes
   { path: '/theme', name: 'Theme', element: Colors, exact: true },

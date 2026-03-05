@@ -106,17 +106,11 @@ const parentNav = [
   },
   {
     component: CNavTitle,
-    name: 'Patient Management',
+    name: 'Management',
   },
   {
     component: CNavItem,
-    name: 'Add Patient',
-    to: '/patients/add',
-    icon: <CIcon icon={cilPlus} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Patient Details',
+    name: 'Patients',
     to: '/patients',
     icon: <CIcon icon={cilChildFriendly} customClassName="nav-icon" />,
   },
