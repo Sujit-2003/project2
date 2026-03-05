@@ -56,11 +56,11 @@ const Login = () => {
     setLoading(true)
     showInfo('Authenticating...')
     try {
-      const encEmail = encryptEmail(email)
-      // Try encrypted email+password first (registered users), then plain (legacy admin)
-      let res = await tryLogin(encEmail, encrypt(password))
+      // Try plain email+password first, then encrypted fallback
+      let res = await tryLogin(email.toLowerCase(), password)
       if (!res) {
-        res = await tryLogin(email.toLowerCase(), password)
+        const encEmail = encryptEmail(email)
+        res = await tryLogin(encEmail, encrypt(password))
       }
 
       if (res && res.data) {
