@@ -27,7 +27,7 @@ import { getSymptoms } from '../../services/symptomService'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
-import { getCountryFromContact, formatPatientContact, getFlagUrl } from '../../utils/countryUtils'
+import { formatPatientContact } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -99,6 +99,12 @@ const Dashboard = () => {
     loadData()
   }, [isAdmin])
 
+  const renderContact = (contact, countryId) => {
+    const countryObj = countries.find((c) => Number(c.country_id) === Number(countryId))
+    const { display } = formatPatientContact(contact, countryObj)
+    return display
+  }
+
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -169,45 +175,28 @@ const Dashboard = () => {
                     </CTableDataCell>
                   </CTableRow>
                 ) : (
-                  users.slice(0, 5).map((user, index) => {
-                    const decryptedCnumber = decryptField(user.cnumber || user.contactNumber)
-                    const country = getCountryFromContact(decryptedCnumber)
-                    return (
-                      <CTableRow key={user.id || index}>
-                        <CTableDataCell>{index + 1}</CTableDataCell>
-                        <CTableDataCell>
-                          <CAvatar color="secondary" size="md">
-                            <CIcon icon={cilUser} />
-                          </CAvatar>
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          {decryptField(user.username || user.name)}
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          {decryptSafe(user.emailid || user.email)}
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          {user.cdate || user.creationDate || '-'}
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          {country ? (
-                            <span className="d-flex align-items-center gap-1">
-                              <img
-                                src={getFlagUrl(country.code)}
-                                alt={country.name}
-                                width="24"
-                                height="16"
-                                style={{ objectFit: 'cover', borderRadius: '2px' }}
-                              />
-                              {country.name}
-                            </span>
-                          ) : (
-                            user.countryid || user.country || '-'
-                          )}
-                        </CTableDataCell>
-                      </CTableRow>
-                    )
-                  })
+                  users.slice(0, 5).map((user, index) => (
+                    <CTableRow key={user.id || index}>
+                      <CTableDataCell>{index + 1}</CTableDataCell>
+                      <CTableDataCell>
+                        <CAvatar color="secondary" size="md">
+                          <CIcon icon={cilUser} />
+                        </CAvatar>
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        {decryptField(user.username || user.name)}
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        {decryptSafe(user.emailid || user.email)}
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        {user.cdate || user.creationDate || '-'}
+                      </CTableDataCell>
+                      <CTableDataCell>
+                        {user.countryid || user.country || '-'}
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))
                 )}
               </CTableBody>
             </CTable>
@@ -236,8 +225,6 @@ const Dashboard = () => {
                 <CTableBody>
                   {allPatients.slice(0, 5).map((p, index) => {
                     const contact = p.contact_number || p.contact_numb || ''
-                    const countryObj = countries.find((c) => Number(c.country_id) === Number(p.country_id))
-                    const { display, isoCode } = formatPatientContact(contact, countryObj)
                     const parentName = decryptField(p._parent?.username || p._parent?.name || '')
                     return (
                       <CTableRow key={p.id || index}>
@@ -262,20 +249,7 @@ const Dashboard = () => {
                             {p.user_gender}
                           </CBadge>
                         </CTableDataCell>
-                        <CTableDataCell>
-                          <span className="d-flex align-items-center gap-1">
-                            {isoCode && (
-                              <img
-                                src={getFlagUrl(isoCode)}
-                                alt=""
-                                width="24"
-                                height="16"
-                                style={{ objectFit: 'cover', borderRadius: '2px' }}
-                              />
-                            )}
-                            {display}
-                          </span>
-                        </CTableDataCell>
+                        <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
                         <CTableDataCell>
                           <CButton
                             color="primary"
@@ -349,7 +323,6 @@ const Dashboard = () => {
               ) : (
                 patients.map((p, index) => {
                   const contact = p.contact_number || p.contact_numb || ''
-                  const { display, country } = formatContact(contact, p.country_id)
                   return (
                     <CTableRow key={p.id || index}>
                       <CTableDataCell>{index + 1}</CTableDataCell>
@@ -364,22 +337,7 @@ const Dashboard = () => {
                           {p.user_gender}
                         </CBadge>
                       </CTableDataCell>
-                      <CTableDataCell>
-                        {country ? (
-                          <span className="d-flex align-items-center gap-1">
-                            <img
-                              src={getFlagUrl(country.code)}
-                              alt={country.name}
-                              width="24"
-                              height="16"
-                              style={{ objectFit: 'cover', borderRadius: '2px' }}
-                            />
-                            {display}
-                          </span>
-                        ) : (
-                          display
-                        )}
-                      </CTableDataCell>
+                      <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
                       <CTableDataCell>
                         <CButton
                           color="primary"

@@ -25,7 +25,7 @@ import { cilPlus, cilUser } from '@coreui/icons'
 import { getUsers } from '../../services/userService'
 import { getAdminId } from '../../services/authService'
 import { decryptSafe, decryptField } from '../../services/encryptionService'
-import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getCountryFromContact } from '../../utils/countryUtils'
 import useTableControls from '../../hooks/useTableControls'
 
 function timeAgo(dateStr) {
@@ -155,20 +155,7 @@ const Users = () => {
                             <CTableDataCell>{decryptSafe(user.emailid || user.email)}</CTableDataCell>
                             <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
                             <CTableDataCell>
-                              {country ? (
-                                <span className="d-flex align-items-center gap-1">
-                                  <img
-                                    src={getFlagUrl(country.code)}
-                                    alt={country.name}
-                                    width="24"
-                                    height="16"
-                                    style={{ objectFit: 'cover', borderRadius: '2px' }}
-                                  />
-                                  {country.name}
-                                </span>
-                              ) : (
-                                user.countryid || user.country || '-'
-                              )}
+                              {country?.name || user.countryid || user.country || '-'}
                             </CTableDataCell>
                             <CTableDataCell>{timeAgo(user.lastLogin || user.last_login)}</CTableDataCell>
                             <CTableDataCell>

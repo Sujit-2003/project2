@@ -27,7 +27,7 @@ import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
-import { formatPatientContact, getFlagUrl } from '../../utils/countryUtils'
+import { formatPatientContact } from '../../utils/countryUtils'
 import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
@@ -75,7 +75,6 @@ const Patients = () => {
           const adminId = getAdminId()
           const filtered = allUsers.filter((u) => u.id !== adminId)
           const pts = await getAllPatientsWithParent(filtered)
-          // Attach decrypted parent name for search
           const enriched = pts.map((p) => ({
             ...p,
             _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
@@ -99,6 +98,12 @@ const Patients = () => {
     }
     loadPatients()
   }, [isAdmin])
+
+  const renderContact = (contact, countryId) => {
+    const countryObj = countries.find((c) => Number(c.country_id) === Number(countryId))
+    const { display } = formatPatientContact(contact, countryObj)
+    return display
+  }
 
   return (
     <CRow>
@@ -155,8 +160,6 @@ const Patients = () => {
                     ) : (
                       paginatedData.map((p, index) => {
                         const contact = p.contact_number || p.contact_numb || ''
-                        const countryObj = countries.find((c) => Number(c.country_id) === Number(p.country_id))
-                        const { display, isoCode } = formatPatientContact(contact, countryObj)
                         return (
                           <CTableRow key={p.id || index}>
                             <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
@@ -184,20 +187,7 @@ const Patients = () => {
                                 {p.user_gender}
                               </CBadge>
                             </CTableDataCell>
-                            <CTableDataCell>
-                              <span className="d-flex align-items-center gap-1">
-                                {isoCode && (
-                                  <img
-                                    src={getFlagUrl(isoCode)}
-                                    alt=""
-                                    width="24"
-                                    height="16"
-                                    style={{ objectFit: 'cover', borderRadius: '2px' }}
-                                  />
-                                )}
-                                {display}
-                              </span>
-                            </CTableDataCell>
+                            <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
                             <CTableDataCell>
                               <CButton
                                 color="primary"

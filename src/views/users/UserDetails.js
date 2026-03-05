@@ -16,7 +16,7 @@ import CIcon from '@coreui/icons-react'
 import { cilArrowLeft, cilPlus, cilUser } from '@coreui/icons'
 import { getUsers } from '../../services/userService'
 import { decryptSafe, decryptField } from '../../services/encryptionService'
-import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getCountryFromContact } from '../../utils/countryUtils'
 
 const UserDetails = () => {
   const { id } = useParams()
@@ -103,21 +103,7 @@ const UserDetails = () => {
               <CCol sm={8}>
                 {(() => {
                   const country = getCountryFromContact(decryptField(user.cnumber || user.contactNumber))
-                  if (country) {
-                    return (
-                      <span className="d-flex align-items-center gap-2">
-                        <img
-                          src={getFlagUrl(country.code)}
-                          alt={country.name}
-                          width="24"
-                          height="16"
-                          style={{ objectFit: 'cover', borderRadius: '2px' }}
-                        />
-                        {country.name}
-                      </span>
-                    )
-                  }
-                  return user.countryid || user.country || '-'
+                  return country?.name || user.countryid || user.country || '-'
                 })()}
               </CCol>
             </CRow>

@@ -18,7 +18,7 @@ import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
-import { formatPatientContact, getFlagUrl } from '../../utils/countryUtils'
+import { formatPatientContact } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -94,7 +94,7 @@ const PatientDetails = () => {
 
   const contact = patient.contact_number || patient.contact_numb || ''
   const countryObj = countries.find((c) => Number(c.country_id) === Number(patient.country_id))
-  const { display: displayContact, isoCode, countryName } = formatPatientContact(contact, countryObj)
+  const { display: displayContact, countryName } = formatPatientContact(contact, countryObj)
 
   const parentUser = patient._parent
   const parentName = parentUser ? decryptField(parentUser.username || parentUser.name || '') : ''
@@ -155,39 +155,11 @@ const PatientDetails = () => {
             </CRow>
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Contact</CCol>
-              <CCol sm={8}>
-                <span className="d-flex align-items-center gap-2">
-                  {isoCode && (
-                    <img
-                      src={getFlagUrl(isoCode)}
-                      alt=""
-                      width="24"
-                      height="16"
-                      style={{ objectFit: 'cover', borderRadius: '2px' }}
-                    />
-                  )}
-                  {displayContact}
-                </span>
-              </CCol>
+              <CCol sm={8}>{displayContact}</CCol>
             </CRow>
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Country</CCol>
-              <CCol sm={8}>
-                {isoCode ? (
-                  <span className="d-flex align-items-center gap-2">
-                    <img
-                      src={getFlagUrl(isoCode)}
-                      alt=""
-                      width="24"
-                      height="16"
-                      style={{ objectFit: 'cover', borderRadius: '2px' }}
-                    />
-                    {countryName}
-                  </span>
-                ) : (
-                  '-'
-                )}
-              </CCol>
+              <CCol sm={8}>{countryName || '-'}</CCol>
             </CRow>
             {patient.about_patient && (
               <CRow className="mb-3">
