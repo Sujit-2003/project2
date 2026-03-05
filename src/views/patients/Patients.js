@@ -22,9 +22,10 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus } from '@coreui/icons'
-import { getPatients, getAllPatients } from '../../services/patientService'
+import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
+import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountryById, getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
 import useTableControls from '../../hooks/useTableControls'
 
@@ -61,7 +62,7 @@ const Patients = () => {
     searchTerm,
     setCurrentPage,
     setSearchTerm,
-  } = useTableControls(patients, ['patient_fname', 'patient_lname', 'p_relationship', 'contact_number'])
+  } = useTableControls(patients, ['patient_fname', 'patient_lname', 'p_relationship', 'contact_number', '_parentName'])
 
   useEffect(() => {
     const loadPatients = async () => {
@@ -69,7 +70,6 @@ const Patients = () => {
       setError('')
       try {
         if (isAdmin) {
-          // Admin: fetch all users, then get patients for each
           const userRes = await getUsers(1)
           let allUsers = []
           if (Array.isArray(userRes)) allUsers = userRes
@@ -77,9 +77,14 @@ const Patients = () => {
 
           const adminId = getAdminId()
           const filtered = allUsers.filter((u) => u.id !== adminId)
-          const userIds = filtered.map((u) => u.id)
-          const pts = await getAllPatients(userIds)
-          setPatients(pts)
+          const pts = await getAllPatientsWithParent(filtered)
+          // Attach decrypted parent name for search
+          const enriched = pts.map((p) => ({
+            ...p,
+            _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
+            _parentEmail: decryptSafe(p._parent?.emailid || p._parent?.email || ''),
+          }))
+          setPatients(enriched)
         } else {
           const umId = getUmId()
           const res = await getPatients(umId)
@@ -134,6 +139,7 @@ const Patients = () => {
                     <CTableRow>
                       <CTableHeaderCell>#</CTableHeaderCell>
                       <CTableHeaderCell>Name</CTableHeaderCell>
+                      {isAdmin && <CTableHeaderCell>Parent</CTableHeaderCell>}
                       <CTableHeaderCell>Relationship</CTableHeaderCell>
                       <CTableHeaderCell>DOB</CTableHeaderCell>
                       <CTableHeaderCell>Age</CTableHeaderCell>
@@ -145,7 +151,7 @@ const Patients = () => {
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={8} className="text-center text-muted">
+                        <CTableDataCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted">
                           No patients found.
                         </CTableDataCell>
                       </CTableRow>
@@ -159,6 +165,19 @@ const Patients = () => {
                             <CTableDataCell>
                               {p.patient_fname} {p.patient_lname}
                             </CTableDataCell>
+                            {isAdmin && (
+                              <CTableDataCell>
+                                <CButton
+                                  color="link"
+                                  size="sm"
+                                  className="p-0 text-decoration-none"
+                                  onClick={() => navigate(`/users/${p.um_id}`)}
+                                >
+                                  {p._parentName || '-'}
+                                </CButton>
+                                <div className="small text-body-secondary">{p._parentEmail}</div>
+                              </CTableDataCell>
+                            )}
                             <CTableDataCell>{p.p_relationship}</CTableDataCell>
                             <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
                             <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>

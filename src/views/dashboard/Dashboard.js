@@ -24,7 +24,7 @@ import { cilPeople, cilUser, cilPlus, cilMedicalCross, cilChildFriendly } from '
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { getUsers } from '../../services/userService'
 import { getSymptoms } from '../../services/symptomService'
-import { getPatients, getAllPatients } from '../../services/patientService'
+import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountryFromContact, getCountryById, getFlagUrl } from '../../utils/countryUtils'
 
@@ -41,7 +41,6 @@ function calculateAge(dob) {
 function formatContact(contact, countryId) {
   const country = getCountryById(countryId) || getCountryFromContact(contact)
   if (!country) return { display: contact || '-', country: null }
-  // If contact already has the prefix, show as-is; otherwise prepend
   const num = String(contact || '')
   const display = num.startsWith('+') ? num : `${country.prefix} ${num}`
   return { display, country }
@@ -83,9 +82,7 @@ const Dashboard = () => {
             setSymptomCount(symptomRes.data.length)
           }
 
-          // Fetch all patients across all users
-          const userIds = filtered.map((u) => u.id)
-          const pts = await getAllPatients(userIds)
+          const pts = await getAllPatientsWithParent(filtered)
           setAllPatients(pts)
         } else {
           const umId = getUmId()
@@ -231,8 +228,8 @@ const Dashboard = () => {
                   <CTableRow>
                     <CTableHeaderCell>#</CTableHeaderCell>
                     <CTableHeaderCell>Name</CTableHeaderCell>
+                    <CTableHeaderCell>Parent</CTableHeaderCell>
                     <CTableHeaderCell>Relationship</CTableHeaderCell>
-                    <CTableHeaderCell>DOB</CTableHeaderCell>
                     <CTableHeaderCell>Age</CTableHeaderCell>
                     <CTableHeaderCell>Gender</CTableHeaderCell>
                     <CTableHeaderCell>Contact</CTableHeaderCell>
@@ -243,14 +240,24 @@ const Dashboard = () => {
                   {allPatients.slice(0, 5).map((p, index) => {
                     const contact = p.contact_number || p.contact_numb || ''
                     const { display, country } = formatContact(contact, p.country_id)
+                    const parentName = decryptField(p._parent?.username || p._parent?.name || '')
                     return (
                       <CTableRow key={p.id || index}>
                         <CTableDataCell>{index + 1}</CTableDataCell>
                         <CTableDataCell>
                           {p.patient_fname} {p.patient_lname}
                         </CTableDataCell>
+                        <CTableDataCell>
+                          <CButton
+                            color="link"
+                            size="sm"
+                            className="p-0 text-decoration-none"
+                            onClick={() => navigate(`/users/${p.um_id}`)}
+                          >
+                            {parentName || '-'}
+                          </CButton>
+                        </CTableDataCell>
                         <CTableDataCell>{p.p_relationship}</CTableDataCell>
-                        <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
                         <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
                         <CTableDataCell>
                           <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'}>

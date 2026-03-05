@@ -20,14 +20,17 @@ export async function getPatients(umId) {
   return safeJson(response)
 }
 
-export async function getAllPatients(userIds) {
+export async function getAllPatientsWithParent(users) {
   const results = await Promise.all(
-    userIds.map((id) => getPatients(id)),
+    users.map((u) => getPatients(u.id)),
   )
   const all = []
-  for (const res of results) {
+  for (let i = 0; i < results.length; i++) {
+    const res = results[i]
     if (Number(res.code) === 0 && Array.isArray(res.data)) {
-      all.push(...res.data)
+      for (const p of res.data) {
+        all.push({ ...p, _parent: users[i] })
+      }
     }
   }
   return all

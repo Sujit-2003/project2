@@ -13,9 +13,10 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft } from '@coreui/icons'
-import { getPatients, getAllPatients } from '../../services/patientService'
+import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
+import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountryById, getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
@@ -49,8 +50,8 @@ const PatientDetails = () => {
           else if (Array.isArray(userRes.data)) allUsers = userRes.data
 
           const adminId = getAdminId()
-          const userIds = allUsers.filter((u) => u.id !== adminId).map((u) => u.id)
-          allPatients = await getAllPatients(userIds)
+          const filtered = allUsers.filter((u) => u.id !== adminId)
+          allPatients = await getAllPatientsWithParent(filtered)
         } else {
           const umId = getUmId()
           const res = await getPatients(umId)
@@ -92,6 +93,10 @@ const PatientDetails = () => {
     ? contact.startsWith('+') ? contact : country ? `${country.prefix} ${contact}` : contact
     : '-'
 
+  const parentUser = patient._parent
+  const parentName = parentUser ? decryptField(parentUser.username || parentUser.name || '') : ''
+  const parentEmail = parentUser ? decryptSafe(parentUser.emailid || parentUser.email || '') : ''
+
   return (
     <CRow className="justify-content-center">
       <CCol lg={8}>
@@ -115,6 +120,24 @@ const PatientDetails = () => {
               </div>
             </div>
 
+            {isAdmin && parentName && (
+              <CRow className="mb-3">
+                <CCol sm={4} className="fw-semibold">Parent</CCol>
+                <CCol sm={8}>
+                  <CButton
+                    color="link"
+                    size="sm"
+                    className="p-0 text-decoration-none"
+                    onClick={() => navigate(`/users/${patient.um_id}`)}
+                  >
+                    {parentName}
+                  </CButton>
+                  {parentEmail && (
+                    <div className="small text-body-secondary">{parentEmail}</div>
+                  )}
+                </CCol>
+              </CRow>
+            )}
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Relationship</CCol>
               <CCol sm={8}>{patient.p_relationship || '-'}</CCol>
