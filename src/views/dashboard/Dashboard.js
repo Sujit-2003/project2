@@ -20,13 +20,13 @@ import {
   CWidgetStatsF,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPeople, cilUser, cilPlus, cilMedicalCross } from '@coreui/icons'
+import { cilPeople, cilUser, cilPlus, cilMedicalCross, cilChildFriendly } from '@coreui/icons'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { getUsers } from '../../services/userService'
 import { getSymptoms } from '../../services/symptomService'
-import { getPatients } from '../../services/patientService'
+import { getPatients, getAllPatients } from '../../services/patientService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
-import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getCountryFromContact, getCountryById, getFlagUrl } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -36,6 +36,15 @@ function calculateAge(dob) {
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
   return age
+}
+
+function formatContact(contact, countryId) {
+  const country = getCountryById(countryId) || getCountryFromContact(contact)
+  if (!country) return { display: contact || '-', country: null }
+  // If contact already has the prefix, show as-is; otherwise prepend
+  const num = String(contact || '')
+  const display = num.startsWith('+') ? num : `${country.prefix} ${num}`
+  return { display, country }
 }
 
 const Dashboard = () => {
@@ -49,6 +58,7 @@ const Dashboard = () => {
   // Admin state
   const [users, setUsers] = useState([])
   const [symptomCount, setSymptomCount] = useState(0)
+  const [allPatients, setAllPatients] = useState([])
 
   // Parent state
   const [patients, setPatients] = useState([])
@@ -61,18 +71,22 @@ const Dashboard = () => {
         if (isAdmin) {
           const [userRes, symptomRes] = await Promise.all([getUsers(1), getSymptoms()])
 
-          // Parse users
           let allUsers = []
           if (Array.isArray(userRes)) allUsers = userRes
           else if (Array.isArray(userRes.data)) allUsers = userRes.data
 
           const adminId = getAdminId()
-          setUsers(allUsers.filter((u) => u.id !== adminId))
+          const filtered = allUsers.filter((u) => u.id !== adminId)
+          setUsers(filtered)
 
-          // Parse symptoms
           if (Number(symptomRes.code) === 0 && Array.isArray(symptomRes.data)) {
             setSymptomCount(symptomRes.data.length)
           }
+
+          // Fetch all patients across all users
+          const userIds = filtered.map((u) => u.id)
+          const pts = await getAllPatients(userIds)
+          setAllPatients(pts)
         } else {
           const umId = getUmId()
           const res = await getPatients(umId)
@@ -115,6 +129,15 @@ const Dashboard = () => {
               icon={<CIcon icon={cilPeople} height={24} />}
               title="Total Users"
               value={users.length}
+            />
+          </CCol>
+          <CCol sm={6} lg={4}>
+            <CWidgetStatsF
+              className="mb-3"
+              color="success"
+              icon={<CIcon icon={cilChildFriendly} height={24} />}
+              title="Total Patients"
+              value={allPatients.length}
             />
           </CCol>
           <CCol sm={6} lg={4}>
@@ -196,6 +219,82 @@ const Dashboard = () => {
             </CTable>
           </CCardBody>
         </CCard>
+
+        {allPatients.length > 0 && (
+          <CCard className="mb-4">
+            <CCardHeader>
+              <strong>Recent Patients</strong>
+            </CCardHeader>
+            <CCardBody>
+              <CTable hover responsive>
+                <CTableHead>
+                  <CTableRow>
+                    <CTableHeaderCell>#</CTableHeaderCell>
+                    <CTableHeaderCell>Name</CTableHeaderCell>
+                    <CTableHeaderCell>Relationship</CTableHeaderCell>
+                    <CTableHeaderCell>DOB</CTableHeaderCell>
+                    <CTableHeaderCell>Age</CTableHeaderCell>
+                    <CTableHeaderCell>Gender</CTableHeaderCell>
+                    <CTableHeaderCell>Contact</CTableHeaderCell>
+                    <CTableHeaderCell>Details</CTableHeaderCell>
+                  </CTableRow>
+                </CTableHead>
+                <CTableBody>
+                  {allPatients.slice(0, 5).map((p, index) => {
+                    const contact = p.contact_number || p.contact_numb || ''
+                    const { display, country } = formatContact(contact, p.country_id)
+                    return (
+                      <CTableRow key={p.id || index}>
+                        <CTableDataCell>{index + 1}</CTableDataCell>
+                        <CTableDataCell>
+                          {p.patient_fname} {p.patient_lname}
+                        </CTableDataCell>
+                        <CTableDataCell>{p.p_relationship}</CTableDataCell>
+                        <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
+                        <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
+                        <CTableDataCell>
+                          <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'}>
+                            {p.user_gender}
+                          </CBadge>
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          {country ? (
+                            <span className="d-flex align-items-center gap-1">
+                              <img
+                                src={getFlagUrl(country.code)}
+                                alt={country.name}
+                                width="24"
+                                height="16"
+                                style={{ objectFit: 'cover', borderRadius: '2px' }}
+                              />
+                              {display}
+                            </span>
+                          ) : (
+                            display
+                          )}
+                        </CTableDataCell>
+                        <CTableDataCell>
+                          <CButton
+                            color="primary"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/patients/${p.id}`)}
+                            title="View Details"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                              <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                          </CButton>
+                        </CTableDataCell>
+                      </CTableRow>
+                    )
+                  })}
+                </CTableBody>
+              </CTable>
+            </CCardBody>
+          </CCard>
+        )}
       </>
     )
   }
@@ -247,7 +346,7 @@ const Dashboard = () => {
               ) : (
                 patients.map((p, index) => {
                   const contact = p.contact_number || p.contact_numb || ''
-                  const country = getCountryFromContact(contact)
+                  const { display, country } = formatContact(contact, p.country_id)
                   return (
                     <CTableRow key={p.id || index}>
                       <CTableDataCell>{index + 1}</CTableDataCell>
@@ -272,10 +371,10 @@ const Dashboard = () => {
                               height="16"
                               style={{ objectFit: 'cover', borderRadius: '2px' }}
                             />
-                            {contact}
+                            {display}
                           </span>
                         ) : (
-                          contact || '-'
+                          display
                         )}
                       </CTableDataCell>
                       <CTableDataCell>

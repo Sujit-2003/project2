@@ -16,12 +16,17 @@ import {
   CSpinner,
   CAlert,
   CBadge,
+  CFormInput,
+  CPagination,
+  CPaginationItem,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus } from '@coreui/icons'
-import { getPatients } from '../../services/patientService'
-import { getUmId } from '../../services/authService'
-import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getPatients, getAllPatients } from '../../services/patientService'
+import { getUsers } from '../../services/userService'
+import { getRoleId, getUmId, getAdminId } from '../../services/authService'
+import { getCountryById, getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -29,29 +34,60 @@ function calculateAge(dob) {
   const today = new Date()
   let age = today.getFullYear() - birth.getFullYear()
   const m = today.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-    age--
-  }
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
   return age
+}
+
+function formatContact(contact, countryId) {
+  const country = getCountryById(countryId) || getCountryFromContact(contact)
+  if (!country) return { display: contact || '-', country: null }
+  const num = String(contact || '')
+  const display = num.startsWith('+') ? num : `${country.prefix} ${num}`
+  return { display, country }
 }
 
 const Patients = () => {
   const navigate = useNavigate()
+  const roleId = getRoleId()
+  const isAdmin = roleId === 2
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const {
+    paginatedData,
+    currentPage,
+    totalPages,
+    searchTerm,
+    setCurrentPage,
+    setSearchTerm,
+  } = useTableControls(patients, ['patient_fname', 'patient_lname', 'p_relationship', 'contact_number'])
 
   useEffect(() => {
     const loadPatients = async () => {
       setLoading(true)
       setError('')
       try {
-        const umId = getUmId()
-        const res = await getPatients(umId)
-        if (Number(res.code) === 0) {
-          setPatients(Array.isArray(res.data) ? res.data : [])
+        if (isAdmin) {
+          // Admin: fetch all users, then get patients for each
+          const userRes = await getUsers(1)
+          let allUsers = []
+          if (Array.isArray(userRes)) allUsers = userRes
+          else if (Array.isArray(userRes.data)) allUsers = userRes.data
+
+          const adminId = getAdminId()
+          const filtered = allUsers.filter((u) => u.id !== adminId)
+          const userIds = filtered.map((u) => u.id)
+          const pts = await getAllPatients(userIds)
+          setPatients(pts)
         } else {
-          setError(res.message || 'Failed to load patients.')
+          const umId = getUmId()
+          const res = await getPatients(umId)
+          if (Number(res.code) === 0) {
+            setPatients(Array.isArray(res.data) ? res.data : [])
+          } else {
+            setError(res.message || 'Failed to load patients.')
+          }
         }
       } catch (err) {
         setError(err?.message || 'Failed to load patients. Please try again.')
@@ -60,7 +96,7 @@ const Patients = () => {
       }
     }
     loadPatients()
-  }, [])
+  }, [isAdmin])
 
   return (
     <CRow>
@@ -68,12 +104,23 @@ const Patients = () => {
         <CCard className="mb-4">
           <CCardHeader className="d-flex justify-content-between align-items-center">
             <strong>Patients</strong>
-            <CButton color="primary" size="sm" onClick={() => navigate('/patients/add')}>
-              <CIcon icon={cilPlus} className="me-1" />
-              Add Patient
-            </CButton>
+            {!isAdmin && (
+              <CButton color="primary" size="sm" onClick={() => navigate('/patients/add')}>
+                <CIcon icon={cilPlus} className="me-1" />
+                Add Patient
+              </CButton>
+            )}
           </CCardHeader>
           <CCardBody>
+            <CFormInput
+              type="text"
+              placeholder="Search patients..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-3"
+              style={{ maxWidth: '300px' }}
+            />
+
             {loading && (
               <div className="text-center py-4">
                 <CSpinner color="primary" />
@@ -81,80 +128,108 @@ const Patients = () => {
             )}
             {error && <CAlert color="danger">{error}</CAlert>}
             {!loading && !error && (
-              <CTable hover responsive>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>Name</CTableHeaderCell>
-                    <CTableHeaderCell>Relationship</CTableHeaderCell>
-                    <CTableHeaderCell>DOB</CTableHeaderCell>
-                    <CTableHeaderCell>Age</CTableHeaderCell>
-                    <CTableHeaderCell>Gender</CTableHeaderCell>
-                    <CTableHeaderCell>Contact</CTableHeaderCell>
-                    <CTableHeaderCell>Details</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {patients.length === 0 ? (
+              <>
+                <CTable hover responsive>
+                  <CTableHead>
                     <CTableRow>
-                      <CTableDataCell colSpan={8} className="text-center text-muted">
-                        No patients found.
-                      </CTableDataCell>
+                      <CTableHeaderCell>#</CTableHeaderCell>
+                      <CTableHeaderCell>Name</CTableHeaderCell>
+                      <CTableHeaderCell>Relationship</CTableHeaderCell>
+                      <CTableHeaderCell>DOB</CTableHeaderCell>
+                      <CTableHeaderCell>Age</CTableHeaderCell>
+                      <CTableHeaderCell>Gender</CTableHeaderCell>
+                      <CTableHeaderCell>Contact</CTableHeaderCell>
+                      <CTableHeaderCell>Details</CTableHeaderCell>
                     </CTableRow>
-                  ) : (
-                    patients.map((p, index) => {
-                      const contact = p.contact_number || p.contact_numb || ''
-                      const country = getCountryFromContact(contact)
-                      return (
-                        <CTableRow key={p.id || index}>
-                          <CTableDataCell>{index + 1}</CTableDataCell>
-                          <CTableDataCell>
-                            {p.patient_fname} {p.patient_lname}
-                          </CTableDataCell>
-                          <CTableDataCell>{p.p_relationship}</CTableDataCell>
-                          <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
-                          <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
-                          <CTableDataCell>
-                            <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'}>
-                              {p.user_gender}
-                            </CBadge>
-                          </CTableDataCell>
-                          <CTableDataCell>
-                            {country ? (
-                              <span className="d-flex align-items-center gap-1">
-                                <img
-                                  src={getFlagUrl(country.code)}
-                                  alt={country.name}
-                                  width="24"
-                                  height="16"
-                                  style={{ objectFit: 'cover', borderRadius: '2px' }}
-                                />
-                                {contact}
-                              </span>
-                            ) : (
-                              contact || '-'
-                            )}
-                          </CTableDataCell>
-                          <CTableDataCell>
-                            <CButton
-                              color="primary"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => navigate(`/patients/${p.id}`)}
-                              title="View Details"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                              </svg>
-                            </CButton>
-                          </CTableDataCell>
-                        </CTableRow>
-                      )
-                    })
-                  )}
-                </CTableBody>
-              </CTable>
+                  </CTableHead>
+                  <CTableBody>
+                    {paginatedData.length === 0 ? (
+                      <CTableRow>
+                        <CTableDataCell colSpan={8} className="text-center text-muted">
+                          No patients found.
+                        </CTableDataCell>
+                      </CTableRow>
+                    ) : (
+                      paginatedData.map((p, index) => {
+                        const contact = p.contact_number || p.contact_numb || ''
+                        const { display, country } = formatContact(contact, p.country_id)
+                        return (
+                          <CTableRow key={p.id || index}>
+                            <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
+                            <CTableDataCell>
+                              {p.patient_fname} {p.patient_lname}
+                            </CTableDataCell>
+                            <CTableDataCell>{p.p_relationship}</CTableDataCell>
+                            <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
+                            <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
+                            <CTableDataCell>
+                              <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'}>
+                                {p.user_gender}
+                              </CBadge>
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              {country ? (
+                                <span className="d-flex align-items-center gap-1">
+                                  <img
+                                    src={getFlagUrl(country.code)}
+                                    alt={country.name}
+                                    width="24"
+                                    height="16"
+                                    style={{ objectFit: 'cover', borderRadius: '2px' }}
+                                  />
+                                  {display}
+                                </span>
+                              ) : (
+                                display
+                              )}
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              <CButton
+                                color="primary"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate(`/patients/${p.id}`)}
+                                title="View Details"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                  <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                              </CButton>
+                            </CTableDataCell>
+                          </CTableRow>
+                        )
+                      })
+                    )}
+                  </CTableBody>
+                </CTable>
+
+                {totalPages > 1 && (
+                  <CPagination className="justify-content-center">
+                    <CPaginationItem
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      Previous
+                    </CPaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <CPaginationItem
+                        key={i + 1}
+                        active={currentPage === i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                      >
+                        {i + 1}
+                      </CPaginationItem>
+                    ))}
+                    <CPaginationItem
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      Next
+                    </CPaginationItem>
+                  </CPagination>
+                )}
+              </>
             )}
           </CCardBody>
         </CCard>

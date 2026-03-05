@@ -13,9 +13,10 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft } from '@coreui/icons'
-import { getPatients } from '../../services/patientService'
-import { getUmId } from '../../services/authService'
-import { getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getPatients, getAllPatients } from '../../services/patientService'
+import { getUsers } from '../../services/userService'
+import { getRoleId, getUmId, getAdminId } from '../../services/authService'
+import { getCountryById, getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -30,6 +31,8 @@ function calculateAge(dob) {
 const PatientDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const roleId = getRoleId()
+  const isAdmin = roleId === 2
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -37,17 +40,30 @@ const PatientDetails = () => {
   useEffect(() => {
     const loadPatient = async () => {
       try {
-        const umId = getUmId()
-        const res = await getPatients(umId)
-        if (Number(res.code) === 0 && Array.isArray(res.data)) {
-          const found = res.data.find((p) => String(p.id) === String(id))
-          if (found) {
-            setPatient(found)
-          } else {
-            setError('Patient not found.')
-          }
+        let allPatients = []
+
+        if (isAdmin) {
+          const userRes = await getUsers(1)
+          let allUsers = []
+          if (Array.isArray(userRes)) allUsers = userRes
+          else if (Array.isArray(userRes.data)) allUsers = userRes.data
+
+          const adminId = getAdminId()
+          const userIds = allUsers.filter((u) => u.id !== adminId).map((u) => u.id)
+          allPatients = await getAllPatients(userIds)
         } else {
-          setError(res.message || 'Failed to load patient details.')
+          const umId = getUmId()
+          const res = await getPatients(umId)
+          if (Number(res.code) === 0 && Array.isArray(res.data)) {
+            allPatients = res.data
+          }
+        }
+
+        const found = allPatients.find((p) => String(p.id) === String(id))
+        if (found) {
+          setPatient(found)
+        } else {
+          setError('Patient not found.')
         }
       } catch (err) {
         setError(err?.message || 'Failed to load patient details.')
@@ -56,7 +72,7 @@ const PatientDetails = () => {
       }
     }
     loadPatient()
-  }, [id])
+  }, [id, isAdmin])
 
   if (loading) {
     return (
@@ -71,7 +87,10 @@ const PatientDetails = () => {
   }
 
   const contact = patient.contact_number || patient.contact_numb || ''
-  const country = getCountryFromContact(contact)
+  const country = getCountryById(patient.country_id) || getCountryFromContact(contact)
+  const displayContact = contact
+    ? contact.startsWith('+') ? contact : country ? `${country.prefix} ${contact}` : contact
+    : '-'
 
   return (
     <CRow className="justify-content-center">
@@ -120,10 +139,10 @@ const PatientDetails = () => {
                       height="16"
                       style={{ objectFit: 'cover', borderRadius: '2px' }}
                     />
-                    {contact}
+                    {displayContact}
                   </span>
                 ) : (
-                  contact || '-'
+                  displayContact
                 )}
               </CCol>
             </CRow>
@@ -146,6 +165,18 @@ const PatientDetails = () => {
                 )}
               </CCol>
             </CRow>
+            {patient.about_patient && (
+              <CRow className="mb-3">
+                <CCol sm={4} className="fw-semibold">About</CCol>
+                <CCol sm={8}>{patient.about_patient}</CCol>
+              </CRow>
+            )}
+            {patient.health_history && (
+              <CRow className="mb-3">
+                <CCol sm={4} className="fw-semibold">Health History</CCol>
+                <CCol sm={8}>{patient.health_history}</CCol>
+              </CRow>
+            )}
           </CCardBody>
         </CCard>
       </CCol>

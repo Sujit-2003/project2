@@ -35,6 +35,12 @@ const adminNav = [
   },
   {
     component: CNavItem,
+    name: 'Patients',
+    to: '/patients',
+    icon: <CIcon icon={cilChildFriendly} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
     name: 'Symptoms',
     to: '/symptoms',
     icon: <CIcon icon={cilMedicalCross} customClassName="nav-icon" />,

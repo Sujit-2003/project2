@@ -17,6 +17,25 @@ const pinCodeToCountry = [
   { prefix: '+34', code: 'es', name: 'Spain' },
 ]
 
+// Map country_id from backend to country info
+const countryIdMap = {
+  1: { prefix: '+91', code: 'in', name: 'India' },
+  2: { prefix: '+1', code: 'us', name: 'USA' },
+  3: { prefix: '+44', code: 'gb', name: 'UK' },
+  4: { prefix: '+61', code: 'au', name: 'Australia' },
+  5: { prefix: '+971', code: 'ae', name: 'UAE' },
+  6: { prefix: '+65', code: 'sg', name: 'Singapore' },
+  7: { prefix: '+49', code: 'de', name: 'Germany' },
+  8: { prefix: '+33', code: 'fr', name: 'France' },
+  9: { prefix: '+81', code: 'jp', name: 'Japan' },
+  10: { prefix: '+86', code: 'cn', name: 'China' },
+}
+
+export function getCountryById(countryId) {
+  if (!countryId) return null
+  return countryIdMap[Number(countryId)] || null
+}
+
 export function getCountryFromContact(contact) {
   if (!contact) return null
   const str = String(contact).trim()
