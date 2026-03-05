@@ -26,7 +26,8 @@ import { getPatients, getAllPatientsWithParent } from '../../services/patientSer
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
-import { getCountryById, getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getCountries } from '../../services/countryService'
+import { formatPatientContact, getFlagUrl } from '../../utils/countryUtils'
 import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
@@ -39,14 +40,6 @@ function calculateAge(dob) {
   return age
 }
 
-function formatContact(contact, countryId) {
-  const country = getCountryById(countryId) || getCountryFromContact(contact)
-  if (!country) return { display: contact || '-', country: null }
-  const num = String(contact || '')
-  const display = num.startsWith('+') ? num : `${country.prefix} ${num}`
-  return { display, country }
-}
-
 const Patients = () => {
   const navigate = useNavigate()
   const roleId = getRoleId()
@@ -54,6 +47,7 @@ const Patients = () => {
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [countries, setCountries] = useState([])
 
   const {
     paginatedData,
@@ -69,6 +63,9 @@ const Patients = () => {
       setLoading(true)
       setError('')
       try {
+        const countryData = await getCountries()
+        setCountries(countryData)
+
         if (isAdmin) {
           const userRes = await getUsers(1)
           let allUsers = []
@@ -158,7 +155,8 @@ const Patients = () => {
                     ) : (
                       paginatedData.map((p, index) => {
                         const contact = p.contact_number || p.contact_numb || ''
-                        const { display, country } = formatContact(contact, p.country_id)
+                        const countryObj = countries.find((c) => Number(c.country_id) === Number(p.country_id))
+                        const { display, isoCode } = formatPatientContact(contact, countryObj)
                         return (
                           <CTableRow key={p.id || index}>
                             <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
@@ -187,20 +185,18 @@ const Patients = () => {
                               </CBadge>
                             </CTableDataCell>
                             <CTableDataCell>
-                              {country ? (
-                                <span className="d-flex align-items-center gap-1">
+                              <span className="d-flex align-items-center gap-1">
+                                {isoCode && (
                                   <img
-                                    src={getFlagUrl(country.code)}
-                                    alt={country.name}
+                                    src={getFlagUrl(isoCode)}
+                                    alt=""
                                     width="24"
                                     height="16"
                                     style={{ objectFit: 'cover', borderRadius: '2px' }}
                                   />
-                                  {display}
-                                </span>
-                              ) : (
-                                display
-                              )}
+                                )}
+                                {display}
+                              </span>
                             </CTableDataCell>
                             <CTableDataCell>
                               <CButton

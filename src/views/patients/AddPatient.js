@@ -13,6 +13,7 @@ import {
   CFormTextarea,
   CButton,
   CSpinner,
+  CInputGroup,
 } from '@coreui/react'
 import { addPatient } from '../../services/patientService'
 import { getUmId } from '../../services/authService'
@@ -38,11 +39,16 @@ const AddPatient = () => {
     contactNumber: '',
     about: '',
     healthHistory: '',
-    country_id: '1',
+    country_id: '',
   })
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const getSelectedCountry = () => {
+    if (!form.country_id) return null
+    return countries.find((c) => String(c.country_id) === String(form.country_id))
   }
 
   const handleSubmit = async (e) => {
@@ -55,6 +61,12 @@ const AddPatient = () => {
 
     setSubmitting(true)
     try {
+      const selected = getSelectedCountry()
+      const isdCode = selected?.isd_code || ''
+      const contactWithCode = isdCode && form.contactNumber
+        ? `${isdCode}${form.contactNumber}`
+        : form.contactNumber
+
       const payload = {
         patient_fname: form.firstName,
         patient_lname: form.lastName,
@@ -64,9 +76,9 @@ const AddPatient = () => {
         about_patient: form.about,
         health_history: form.healthHistory,
         um_id: getUmId(),
-        contact_numb: form.contactNumber,
-        contact_number: form.contactNumber,
-        country_id: Number(form.country_id),
+        contact_numb: contactWithCode,
+        contact_number: contactWithCode,
+        country_id: Number(form.country_id) || 1,
       }
       const res = await addPatient(payload)
       if (Number(res.code) === 0) {
@@ -157,26 +169,35 @@ const AddPatient = () => {
                 <CCol md={6}>
                   <div className="mb-3">
                     <CFormLabel>Contact Number</CFormLabel>
-                    <CFormInput name="contactNumber" value={form.contactNumber} onChange={handleChange} />
-                  </div>
-                </CCol>
-              </CRow>
-              <CRow>
-                <CCol md={6}>
-                  <div className="mb-3">
-                    <CFormLabel>Country</CFormLabel>
-                    <CFormSelect name="country_id" value={form.country_id} onChange={handleChange}>
-                      <option value="">Select Country</option>
-                      {countries.map((c) => {
-                        const cid = c.id ?? c.countryid ?? c.country_id
-                        const name = c.name ?? c.country_name ?? c.countryname ?? ''
-                        return (
-                          <option key={cid} value={cid}>
-                            {name}
-                          </option>
-                        )
-                      })}
-                    </CFormSelect>
+                    <CInputGroup>
+                      {countries.length > 0 ? (
+                        <CFormSelect
+                          name="country_id"
+                          value={form.country_id}
+                          onChange={handleChange}
+                          style={{ maxWidth: '180px' }}
+                        >
+                          <option value="">Select</option>
+                          {countries.map((c) => (
+                            <option key={c.country_id} value={c.country_id}>
+                              {c.isd_code} ({c.country_name})
+                            </option>
+                          ))}
+                        </CFormSelect>
+                      ) : (
+                        <CFormInput
+                          placeholder="+91"
+                          style={{ maxWidth: '80px' }}
+                          disabled
+                        />
+                      )}
+                      <CFormInput
+                        name="contactNumber"
+                        value={form.contactNumber}
+                        onChange={handleChange}
+                        placeholder="Phone number"
+                      />
+                    </CInputGroup>
                   </div>
                 </CCol>
               </CRow>

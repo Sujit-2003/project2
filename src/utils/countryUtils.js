@@ -1,48 +1,35 @@
-// Map country calling code prefix to country code (ISO 3166-1 alpha-2) for flag display
-const pinCodeToCountry = [
-  { prefix: '+91', code: 'in', name: 'India' },
-  { prefix: '+1', code: 'us', name: 'USA' },
-  { prefix: '+44', code: 'gb', name: 'UK' },
-  { prefix: '+61', code: 'au', name: 'Australia' },
-  { prefix: '+971', code: 'ae', name: 'UAE' },
-  { prefix: '+65', code: 'sg', name: 'Singapore' },
-  { prefix: '+49', code: 'de', name: 'Germany' },
-  { prefix: '+33', code: 'fr', name: 'France' },
-  { prefix: '+81', code: 'jp', name: 'Japan' },
-  { prefix: '+86', code: 'cn', name: 'China' },
-  { prefix: '+55', code: 'br', name: 'Brazil' },
-  { prefix: '+7', code: 'ru', name: 'Russia' },
-  { prefix: '+82', code: 'kr', name: 'South Korea' },
-  { prefix: '+39', code: 'it', name: 'Italy' },
-  { prefix: '+34', code: 'es', name: 'Spain' },
-]
-
-// Map country_id from backend to country info
-const countryIdMap = {
-  1: { prefix: '+91', code: 'in', name: 'India' },
-  2: { prefix: '+1', code: 'us', name: 'USA' },
-  3: { prefix: '+44', code: 'gb', name: 'UK' },
-  4: { prefix: '+61', code: 'au', name: 'Australia' },
-  5: { prefix: '+971', code: 'ae', name: 'UAE' },
-  6: { prefix: '+65', code: 'sg', name: 'Singapore' },
-  7: { prefix: '+49', code: 'de', name: 'Germany' },
-  8: { prefix: '+33', code: 'fr', name: 'France' },
-  9: { prefix: '+81', code: 'jp', name: 'Japan' },
-  10: { prefix: '+86', code: 'cn', name: 'China' },
+// Map ISD code to ISO country code for flag display
+const isdToIso = {
+  '+91': 'in',
+  '+1': 'us',
+  '+44': 'gb',
+  '+61': 'au',
+  '+971': 'ae',
+  '+65': 'sg',
+  '+49': 'de',
+  '+33': 'fr',
+  '+81': 'jp',
+  '+86': 'cn',
+  '+55': 'br',
+  '+7': 'ru',
+  '+82': 'kr',
+  '+39': 'it',
+  '+34': 'es',
 }
 
-export function getCountryById(countryId) {
-  if (!countryId) return null
-  return countryIdMap[Number(countryId)] || null
+export function getIsoCode(isdCode) {
+  return isdToIso[isdCode] || null
 }
 
 export function getCountryFromContact(contact) {
   if (!contact) return null
   const str = String(contact).trim()
   // Sort by prefix length descending so +971 matches before +9, +91 before +1
-  const sorted = [...pinCodeToCountry].sort((a, b) => b.prefix.length - a.prefix.length)
-  for (const entry of sorted) {
-    if (str.startsWith(entry.prefix)) return entry
+  const prefixes = Object.keys(isdToIso).sort((a, b) => b.length - a.length)
+  for (const prefix of prefixes) {
+    if (str.startsWith(prefix)) {
+      return { prefix, code: isdToIso[prefix], name: prefix }
+    }
   }
   // Fallback: 10-digit number starting with 6-9 is likely Indian
   if (/^[6-9]\d{9}$/.test(str)) {
@@ -51,6 +38,25 @@ export function getCountryFromContact(contact) {
   return null
 }
 
-export function getFlagUrl(countryCode) {
-  return `https://flagcdn.com/w40/${countryCode}.png`
+export function getFlagUrl(isoCode) {
+  if (!isoCode) return ''
+  return `https://flagcdn.com/w40/${isoCode.toLowerCase()}.png`
+}
+
+// Format contact for display: flag + ISD code + number
+// countryObj comes from getCountries() API: { country_id, country_name, isd_code }
+export function formatPatientContact(contact, countryObj) {
+  const num = String(contact || '').trim()
+  if (countryObj && countryObj.isd_code) {
+    const iso = getIsoCode(countryObj.isd_code)
+    const display = num.startsWith('+') ? num : `${countryObj.isd_code} ${num}`
+    return { display, isoCode: iso, countryName: countryObj.country_name }
+  }
+  // Fallback to contact-based detection
+  const detected = getCountryFromContact(num)
+  if (detected) {
+    const display = num.startsWith('+') ? num : `${detected.prefix} ${num}`
+    return { display, isoCode: detected.code, countryName: detected.name }
+  }
+  return { display: num || '-', isoCode: null, countryName: null }
 }

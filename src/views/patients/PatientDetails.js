@@ -17,7 +17,8 @@ import { getPatients, getAllPatientsWithParent } from '../../services/patientSer
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
-import { getCountryById, getCountryFromContact, getFlagUrl } from '../../utils/countryUtils'
+import { getCountries } from '../../services/countryService'
+import { formatPatientContact, getFlagUrl } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -37,10 +38,14 @@ const PatientDetails = () => {
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [countries, setCountries] = useState([])
 
   useEffect(() => {
     const loadPatient = async () => {
       try {
+        const countryData = await getCountries()
+        setCountries(countryData)
+
         let allPatients = []
 
         if (isAdmin) {
@@ -88,10 +93,8 @@ const PatientDetails = () => {
   }
 
   const contact = patient.contact_number || patient.contact_numb || ''
-  const country = getCountryById(patient.country_id) || getCountryFromContact(contact)
-  const displayContact = contact
-    ? contact.startsWith('+') ? contact : country ? `${country.prefix} ${contact}` : contact
-    : '-'
+  const countryObj = countries.find((c) => Number(c.country_id) === Number(patient.country_id))
+  const { display: displayContact, isoCode, countryName } = formatPatientContact(contact, countryObj)
 
   const parentUser = patient._parent
   const parentName = parentUser ? decryptField(parentUser.username || parentUser.name || '') : ''
@@ -153,35 +156,33 @@ const PatientDetails = () => {
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Contact</CCol>
               <CCol sm={8}>
-                {country ? (
-                  <span className="d-flex align-items-center gap-2">
+                <span className="d-flex align-items-center gap-2">
+                  {isoCode && (
                     <img
-                      src={getFlagUrl(country.code)}
-                      alt={country.name}
+                      src={getFlagUrl(isoCode)}
+                      alt=""
                       width="24"
                       height="16"
                       style={{ objectFit: 'cover', borderRadius: '2px' }}
                     />
-                    {displayContact}
-                  </span>
-                ) : (
-                  displayContact
-                )}
+                  )}
+                  {displayContact}
+                </span>
               </CCol>
             </CRow>
             <CRow className="mb-3">
               <CCol sm={4} className="fw-semibold">Country</CCol>
               <CCol sm={8}>
-                {country ? (
+                {isoCode ? (
                   <span className="d-flex align-items-center gap-2">
                     <img
-                      src={getFlagUrl(country.code)}
-                      alt={country.name}
+                      src={getFlagUrl(isoCode)}
+                      alt=""
                       width="24"
                       height="16"
                       style={{ objectFit: 'cover', borderRadius: '2px' }}
                     />
-                    {country.name}
+                    {countryName}
                   </span>
                 ) : (
                   '-'

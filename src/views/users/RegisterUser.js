@@ -69,7 +69,7 @@ const RegisterUser = () => {
   const getSelectedCountry = () => {
     if (!form.countryId) return null
     return countries.find(
-      (c) => String(c.id ?? c.countryid ?? c.country_id) === String(form.countryId),
+      (c) => String(c.country_id ?? c.id ?? c.countryid) === String(form.countryId),
     )
   }
 
@@ -96,9 +96,9 @@ const RegisterUser = () => {
     setSubmitting(true)
     try {
       const selected = getSelectedCountry()
-      const countryCode = selected?.code ?? selected?.country_code ?? selected?.phonecode ?? ''
+      const countryCode = selected?.isd_code ?? selected?.code ?? selected?.country_code ?? ''
       const countryid = selected
-        ? Number(selected.id ?? selected.countryid ?? selected.country_id ?? 1)
+        ? Number(selected.country_id ?? selected.id ?? selected.countryid ?? 1)
         : 1
       const contactNumber = countryCode ? `${countryCode}${form.phone}` : form.phone
 
@@ -164,16 +164,11 @@ const RegisterUser = () => {
                           style={{ maxWidth: '180px' }}
                         >
                           <option value="">Select</option>
-                          {countries.map((c) => {
-                            const cid = c.id ?? c.countryid ?? c.country_id
-                            const code = c.code ?? c.country_code ?? c.phonecode ?? ''
-                            const name = c.name ?? c.country_name ?? c.countryname ?? ''
-                            return (
-                              <option key={cid} value={cid}>
-                                {code ? `${code} (${name})` : name}
-                              </option>
-                            )
-                          })}
+                          {countries.map((c) => (
+                            <option key={c.country_id} value={c.country_id}>
+                              {c.isd_code} ({c.country_name})
+                            </option>
+                          ))}
                         </CFormSelect>
                       ) : (
                         <CFormInput

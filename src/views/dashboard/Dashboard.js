@@ -26,7 +26,8 @@ import { getUsers } from '../../services/userService'
 import { getSymptoms } from '../../services/symptomService'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
-import { getCountryFromContact, getCountryById, getFlagUrl } from '../../utils/countryUtils'
+import { getCountries } from '../../services/countryService'
+import { getCountryFromContact, formatPatientContact, getFlagUrl } from '../../utils/countryUtils'
 
 function calculateAge(dob) {
   if (!dob) return ''
@@ -36,14 +37,6 @@ function calculateAge(dob) {
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
   return age
-}
-
-function formatContact(contact, countryId) {
-  const country = getCountryById(countryId) || getCountryFromContact(contact)
-  if (!country) return { display: contact || '-', country: null }
-  const num = String(contact || '')
-  const display = num.startsWith('+') ? num : `${country.prefix} ${num}`
-  return { display, country }
 }
 
 const Dashboard = () => {
@@ -61,12 +54,16 @@ const Dashboard = () => {
 
   // Parent state
   const [patients, setPatients] = useState([])
+  const [countries, setCountries] = useState([])
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true)
       setError('')
       try {
+        const countryData = await getCountries()
+        setCountries(countryData)
+
         if (isAdmin) {
           const [userRes, symptomRes] = await Promise.all([getUsers(1), getSymptoms()])
 
@@ -239,7 +236,8 @@ const Dashboard = () => {
                 <CTableBody>
                   {allPatients.slice(0, 5).map((p, index) => {
                     const contact = p.contact_number || p.contact_numb || ''
-                    const { display, country } = formatContact(contact, p.country_id)
+                    const countryObj = countries.find((c) => Number(c.country_id) === Number(p.country_id))
+                    const { display, isoCode } = formatPatientContact(contact, countryObj)
                     const parentName = decryptField(p._parent?.username || p._parent?.name || '')
                     return (
                       <CTableRow key={p.id || index}>
@@ -265,20 +263,18 @@ const Dashboard = () => {
                           </CBadge>
                         </CTableDataCell>
                         <CTableDataCell>
-                          {country ? (
-                            <span className="d-flex align-items-center gap-1">
+                          <span className="d-flex align-items-center gap-1">
+                            {isoCode && (
                               <img
-                                src={getFlagUrl(country.code)}
-                                alt={country.name}
+                                src={getFlagUrl(isoCode)}
+                                alt=""
                                 width="24"
                                 height="16"
                                 style={{ objectFit: 'cover', borderRadius: '2px' }}
                               />
-                              {display}
-                            </span>
-                          ) : (
-                            display
-                          )}
+                            )}
+                            {display}
+                          </span>
                         </CTableDataCell>
                         <CTableDataCell>
                           <CButton
