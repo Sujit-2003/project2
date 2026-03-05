@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -15,6 +15,7 @@ import {
   CSpinner,
 } from '@coreui/react'
 import { addPatient } from '../../services/patientService'
+import { getCountries } from '../../services/countryService'
 import { useToast } from '../../components/ToastContext'
 
 const AddPatientForUser = () => {
@@ -22,6 +23,12 @@ const AddPatientForUser = () => {
   const navigate = useNavigate()
   const { showSuccess, showError, showWarning } = useToast()
   const [submitting, setSubmitting] = useState(false)
+  const [countries, setCountries] = useState([])
+
+  useEffect(() => {
+    getCountries().then((data) => setCountries(data))
+  }, [])
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -159,11 +166,16 @@ const AddPatientForUser = () => {
                   <div className="mb-3">
                     <CFormLabel>Country</CFormLabel>
                     <CFormSelect name="country_id" value={form.country_id} onChange={handleChange}>
-                      <option value="1">India</option>
-                      <option value="2">USA</option>
-                      <option value="3">UK</option>
-                      <option value="4">Australia</option>
-                      <option value="5">UAE</option>
+                      <option value="">Select Country</option>
+                      {countries.map((c) => {
+                        const cid = c.id ?? c.countryid ?? c.country_id
+                        const name = c.name ?? c.country_name ?? c.countryname ?? ''
+                        return (
+                          <option key={cid} value={cid}>
+                            {name}
+                          </option>
+                        )
+                      })}
                     </CFormSelect>
                   </div>
                 </CCol>

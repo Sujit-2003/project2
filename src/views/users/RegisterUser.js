@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -22,26 +22,15 @@ import {
 } from '@coreui/react'
 import { registerUser } from '../../services/userService'
 import { getTermsAndConditions } from '../../services/termsService'
+import { getCountries } from '../../services/countryService'
 import { useToast } from '../../components/ToastContext'
-
-const countryCodes = [
-  { code: '+91', label: '+91 (India)', countryid: 1 },
-  { code: '+1', label: '+1 (USA)', countryid: 2 },
-  { code: '+44', label: '+44 (UK)', countryid: 3 },
-  { code: '+61', label: '+61 (Australia)', countryid: 4 },
-  { code: '+971', label: '+971 (UAE)', countryid: 5 },
-  { code: '+65', label: '+65 (Singapore)', countryid: 6 },
-  { code: '+49', label: '+49 (Germany)', countryid: 7 },
-  { code: '+33', label: '+33 (France)', countryid: 8 },
-  { code: '+81', label: '+81 (Japan)', countryid: 9 },
-  { code: '+86', label: '+86 (China)', countryid: 10 },
-]
 
 const RegisterUser = () => {
   const navigate = useNavigate()
   const { showSuccess, showError, showWarning } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [countries, setCountries] = useState([])
 
   // Terms modal state
   const [termsVisible, setTermsVisible] = useState(false)
@@ -51,10 +40,14 @@ const RegisterUser = () => {
   const [form, setForm] = useState({
     name: '',
     emailId: '',
-    countryCodeIndex: '0',
+    countryId: '',
     phone: '',
     password: '',
   })
+
+  useEffect(() => {
+    getCountries().then((data) => setCountries(data))
+  }, [])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -71,6 +64,13 @@ const RegisterUser = () => {
     } finally {
       setTermsLoading(false)
     }
+  }
+
+  const getSelectedCountry = () => {
+    if (!form.countryId) return null
+    return countries.find(
+      (c) => String(c.id ?? c.countryid ?? c.country_id) === String(form.countryId),
+    )
   }
 
   const handleSubmit = async (e) => {
@@ -95,13 +95,19 @@ const RegisterUser = () => {
 
     setSubmitting(true)
     try {
-      const selected = countryCodes[Number(form.countryCodeIndex)]
+      const selected = getSelectedCountry()
+      const countryCode = selected?.code ?? selected?.country_code ?? selected?.phonecode ?? ''
+      const countryid = selected
+        ? Number(selected.id ?? selected.countryid ?? selected.country_id ?? 1)
+        : 1
+      const contactNumber = countryCode ? `${countryCode}${form.phone}` : form.phone
+
       const res = await registerUser({
         name: form.name,
         emailId: form.emailId,
-        contactNumber: `${selected.code}${form.phone}`,
+        contactNumber,
         password: form.password,
-        countryid: selected.countryid,
+        countryid,
       })
       if (Number(res.code) === 0) {
         showSuccess(res.message || 'User registered successfully!')
@@ -150,18 +156,35 @@ const RegisterUser = () => {
                   <div className="mb-3">
                     <CFormLabel>Phone</CFormLabel>
                     <CInputGroup>
-                      <CFormSelect
-                        name="countryCodeIndex"
-                        value={form.countryCodeIndex}
-                        onChange={handleChange}
-                        style={{ maxWidth: '160px' }}
-                      >
-                        {countryCodes.map((c, i) => (
-                          <option key={i} value={i}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </CFormSelect>
+                      {countries.length > 0 ? (
+                        <CFormSelect
+                          name="countryId"
+                          value={form.countryId}
+                          onChange={handleChange}
+                          style={{ maxWidth: '180px' }}
+                        >
+                          <option value="">Select</option>
+                          {countries.map((c) => {
+                            const cid = c.id ?? c.countryid ?? c.country_id
+                            const code = c.code ?? c.country_code ?? c.phonecode ?? ''
+                            const name = c.name ?? c.country_name ?? c.countryname ?? ''
+                            return (
+                              <option key={cid} value={cid}>
+                                {code ? `${code} (${name})` : name}
+                              </option>
+                            )
+                          })}
+                        </CFormSelect>
+                      ) : (
+                        <CFormInput
+                          name="countryCode"
+                          placeholder="+91"
+                          style={{ maxWidth: '80px' }}
+                          onChange={(e) =>
+                            setForm({ ...form, countryCode: e.target.value })
+                          }
+                        />
+                      )}
                       <CFormInput
                         name="phone"
                         value={form.phone}
