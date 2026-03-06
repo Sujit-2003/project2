@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CCard,
@@ -10,11 +10,12 @@ import {
   CFormInput,
   CFormLabel,
   CFormSelect,
-  CFormTextarea,
   CButton,
   CSpinner,
   CInputGroup,
 } from '@coreui/react'
+import ReactQuill from 'react-quill-new'
+import 'react-quill-new/dist/quill.snow.css'
 import { addPatient } from '../../services/patientService'
 import { getUmId } from '../../services/authService'
 import { getCountries } from '../../services/countryService'
@@ -25,6 +26,7 @@ const AddPatient = () => {
   const { showSuccess, showError, showWarning } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [countries, setCountries] = useState([])
+  const [dobError, setDobError] = useState('')
 
   useEffect(() => {
     getCountries().then((data) => setCountries(data))
@@ -42,8 +44,25 @@ const AddPatient = () => {
     country_id: '',
   })
 
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const quillModules = useMemo(() => ({
+    toolbar: [
+      ['bold', 'italic', 'underline'],
+      [{ list: 'bullet' }, { list: 'ordered' }],
+    ],
+  }), [])
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    if (name === 'dob') {
+      if (value > todayStr) {
+        setDobError('Please enter a valid Date of Birth.')
+      } else {
+        setDobError('')
+      }
+    }
+    setForm({ ...form, [name]: value })
   }
 
   const getSelectedCountry = () => {
@@ -56,6 +75,11 @@ const AddPatient = () => {
 
     if (!form.firstName || !form.lastName || !form.dob || !form.gender) {
       showWarning('First name, last name, date of birth, and gender are required.')
+      return
+    }
+
+    if (form.dob > todayStr) {
+      setDobError('Please enter a valid Date of Birth.')
       return
     }
 
@@ -121,7 +145,20 @@ const AddPatient = () => {
                 <CCol md={6}>
                   <div className="mb-3">
                     <CFormLabel>Date of Birth</CFormLabel>
-                    <CFormInput type="date" name="dob" value={form.dob} onChange={handleChange} required />
+                    <CFormInput
+                      type="date"
+                      name="dob"
+                      value={form.dob}
+                      onChange={handleChange}
+                      max={todayStr}
+                      required
+                      style={dobError ? { border: '1px solid red' } : {}}
+                    />
+                    {dobError && (
+                      <div style={{ color: 'red', fontSize: '0.875em', marginTop: '4px' }}>
+                        {dobError}
+                      </div>
+                    )}
                   </div>
                 </CCol>
                 <CCol md={6}>
@@ -205,13 +242,23 @@ const AddPatient = () => {
                 <CCol md={6}>
                   <div className="mb-3">
                     <CFormLabel>About Patient</CFormLabel>
-                    <CFormTextarea name="about" value={form.about} onChange={handleChange} rows={2} />
+                    <ReactQuill
+                      theme="snow"
+                      value={form.about}
+                      onChange={(value) => setForm({ ...form, about: value })}
+                      modules={quillModules}
+                    />
                   </div>
                 </CCol>
                 <CCol md={6}>
                   <div className="mb-3">
                     <CFormLabel>Health History</CFormLabel>
-                    <CFormTextarea name="healthHistory" value={form.healthHistory} onChange={handleChange} rows={2} />
+                    <ReactQuill
+                      theme="snow"
+                      value={form.healthHistory}
+                      onChange={(value) => setForm({ ...form, healthHistory: value })}
+                      modules={quillModules}
+                    />
                   </div>
                 </CCol>
               </CRow>

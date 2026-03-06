@@ -10,6 +10,9 @@ const PatientDetails = React.lazy(() => import('./views/patients/PatientDetails'
 const AddPatient = React.lazy(() => import('./views/patients/AddPatient'))
 const Symptoms = React.lazy(() => import('./views/symptoms/Symptoms'))
 const AddSymptom = React.lazy(() => import('./views/symptoms/AddSymptom'))
+const Doctors = React.lazy(() => import('./views/doctors/Doctors'))
+const AddDoctor = React.lazy(() => import('./views/doctors/AddDoctor'))
+const DoctorDetails = React.lazy(() => import('./views/doctors/DoctorDetails'))
 const ChangePassword = React.lazy(() => import('./views/pages/ChangePassword'))
 
 // Demo views
@@ -31,6 +34,9 @@ const routes = [
   { path: '/users/:id/add-patient', name: 'Add Patient for User', element: AddPatientForUser, adminOnly: true },
   { path: '/users/:id', name: 'User Details', element: UserDetails, adminOnly: true },
   { path: '/users', name: 'Users', element: Users, adminOnly: true },
+  { path: '/doctors/add', name: 'Add Doctor', element: AddDoctor, adminOnly: true },
+  { path: '/doctors/:id', name: 'Doctor Details', element: DoctorDetails, adminOnly: true },
+  { path: '/doctors', name: 'Doctors', element: Doctors, adminOnly: true },
   { path: '/symptoms/add', name: 'Add Symptom', element: AddSymptom, adminOnly: true },
   { path: '/symptoms', name: 'Symptoms', element: Symptoms, adminOnly: true },
   // SUJI routes — all roles

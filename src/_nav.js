@@ -13,6 +13,7 @@ import {
   cilBell,
   cilCalculator,
   cilMedicalCross,
+  cilUserFollow,
 } from '@coreui/icons'
 import { CNavItem, CNavGroup, CNavTitle } from '@coreui/react'
 
@@ -38,6 +39,12 @@ const adminNav = [
     name: 'Patients',
     to: '/patients',
     icon: <CIcon icon={cilChildFriendly} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Doctors',
+    to: '/doctors',
+    icon: <CIcon icon={cilUserFollow} customClassName="nav-icon" />,
   },
   {
     component: CNavItem,

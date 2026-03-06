@@ -17,13 +17,11 @@ import {
   CAlert,
   CAvatar,
   CBadge,
-  CWidgetStatsF,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPeople, cilUser, cilPlus, cilMedicalCross, cilChildFriendly } from '@coreui/icons'
+import { cilPeople, cilUser, cilPlus, cilChildFriendly } from '@coreui/icons'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { getUsers } from '../../services/userService'
-import { getSymptoms } from '../../services/symptomService'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
@@ -39,6 +37,23 @@ function calculateAge(dob) {
   return age
 }
 
+const StatCard = ({ icon, color, label, count }) => (
+  <CCard className="mb-3 border-0 shadow-sm">
+    <CCardBody className="d-flex align-items-center gap-3 py-4">
+      <div
+        className={`rounded-circle d-flex align-items-center justify-content-center bg-${color} bg-opacity-10`}
+        style={{ width: 56, height: 56 }}
+      >
+        <CIcon icon={icon} height={28} className={`text-${color}`} />
+      </div>
+      <div>
+        <div className="fs-3 fw-bold">{count}</div>
+        <div className="text-body-secondary small text-uppercase fw-semibold">{label}</div>
+      </div>
+    </CCardBody>
+  </CCard>
+)
+
 const Dashboard = () => {
   const navigate = useNavigate()
   const roleId = getRoleId()
@@ -49,7 +64,6 @@ const Dashboard = () => {
 
   // Admin state
   const [users, setUsers] = useState([])
-  const [symptomCount, setSymptomCount] = useState(0)
   const [allPatients, setAllPatients] = useState([])
 
   // Parent state
@@ -65,7 +79,7 @@ const Dashboard = () => {
         setCountries(countryData)
 
         if (isAdmin) {
-          const [userRes, symptomRes] = await Promise.all([getUsers(1), getSymptoms()])
+          const userRes = await getUsers(1)
 
           let allUsers = []
           if (Array.isArray(userRes)) allUsers = userRes
@@ -74,10 +88,6 @@ const Dashboard = () => {
           const adminId = getAdminId()
           const filtered = allUsers.filter((u) => u.id !== adminId)
           setUsers(filtered)
-
-          if (Number(symptomRes.code) === 0 && Array.isArray(symptomRes.data)) {
-            setSymptomCount(symptomRes.data.length)
-          }
 
           const pts = await getAllPatientsWithParent(filtered)
           setAllPatients(pts)
@@ -123,31 +133,13 @@ const Dashboard = () => {
       <>
         <CRow className="mb-4" xs={{ gutter: 4 }}>
           <CCol sm={6} lg={4}>
-            <CWidgetStatsF
-              className="mb-3"
-              color="primary"
-              icon={<CIcon icon={cilPeople} height={24} />}
-              title="Total Users"
-              value={users.length}
-            />
+            <StatCard icon={cilPeople} color="primary" label="Users" count={users.length} />
           </CCol>
           <CCol sm={6} lg={4}>
-            <CWidgetStatsF
-              className="mb-3"
-              color="success"
-              icon={<CIcon icon={cilChildFriendly} height={24} />}
-              title="Total Patients"
-              value={allPatients.length}
-            />
+            <StatCard icon={cilUser} color="warning" label="Parents" count={users.length} />
           </CCol>
           <CCol sm={6} lg={4}>
-            <CWidgetStatsF
-              className="mb-3"
-              color="info"
-              icon={<CIcon icon={cilMedicalCross} height={24} />}
-              title="Total Symptoms"
-              value={symptomCount}
-            />
+            <StatCard icon={cilChildFriendly} color="success" label="Patients" count={allPatients.length} />
           </CCol>
         </CRow>
 
@@ -281,13 +273,7 @@ const Dashboard = () => {
     <>
       <CRow className="mb-4" xs={{ gutter: 4 }}>
         <CCol sm={6} lg={4}>
-          <CWidgetStatsF
-            className="mb-3"
-            color="primary"
-            icon={<CIcon icon={cilPeople} height={24} />}
-            title="Total Patients"
-            value={patients.length}
-          />
+          <StatCard icon={cilChildFriendly} color="primary" label="Patients" count={patients.length} />
         </CCol>
       </CRow>
 

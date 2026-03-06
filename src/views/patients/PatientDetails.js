@@ -12,7 +12,8 @@ import {
   CBadge,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilArrowLeft } from '@coreui/icons'
+import { cilArrowLeft, cilCalendar, cilList } from '@coreui/icons'
+import ActivityScheduler from './ActivityScheduler'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
@@ -39,6 +40,7 @@ const PatientDetails = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [countries, setCountries] = useState([])
+  const [showScheduler, setShowScheduler] = useState(false)
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -164,17 +166,49 @@ const PatientDetails = () => {
             {patient.about_patient && (
               <CRow className="mb-3">
                 <CCol sm={4} className="fw-semibold">About</CCol>
-                <CCol sm={8}>{patient.about_patient}</CCol>
+                <CCol sm={8}>
+                  <div dangerouslySetInnerHTML={{ __html: patient.about_patient }} />
+                </CCol>
               </CRow>
             )}
             {patient.health_history && (
               <CRow className="mb-3">
                 <CCol sm={4} className="fw-semibold">Health History</CCol>
-                <CCol sm={8}>{patient.health_history}</CCol>
+                <CCol sm={8}>
+                  <div dangerouslySetInnerHTML={{ __html: patient.health_history }} />
+                </CCol>
               </CRow>
+            )}
+
+            {!isAdmin && (
+              <div className="d-flex gap-2 mt-4">
+                <CButton
+                  color="primary"
+                  size="sm"
+                  onClick={() => setShowScheduler(!showScheduler)}
+                >
+                  <CIcon icon={cilCalendar} className="me-1" />
+                  {showScheduler ? 'Hide Scheduler' : 'Add Scheduler'}
+                </CButton>
+                <CButton
+                  color="info"
+                  size="sm"
+                  onClick={() => setShowScheduler(true)}
+                >
+                  <CIcon icon={cilList} className="me-1" />
+                  Activities
+                </CButton>
+              </div>
             )}
           </CCardBody>
         </CCard>
+
+        {!isAdmin && showScheduler && (
+          <ActivityScheduler
+            patientId={patient.id}
+            patientName={`${patient.patient_fname} ${patient.patient_lname}`}
+          />
+        )}
       </CCol>
     </CRow>
   )
