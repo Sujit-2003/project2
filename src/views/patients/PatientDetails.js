@@ -10,15 +10,10 @@ import {
   CSpinner,
   CAlert,
   CBadge,
-  CNav,
-  CNavItem,
-  CNavLink,
-  CTabContent,
-  CTabPane,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft } from '@coreui/icons'
-import ActivityScheduler from './ActivityScheduler'
+import { ActivitiesList, SchedulerForm } from './ActivityScheduler'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
@@ -45,7 +40,9 @@ const PatientDetails = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [countries, setCountries] = useState([])
-  const [activeTab, setActiveTab] = useState('activities')
+  const [showForm, setShowForm] = useState(false)
+  const [editActivity, setEditActivity] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -188,40 +185,45 @@ const PatientDetails = () => {
           </CCardBody>
         </CCard>
 
-        {/* Tabs for Parent — Activities & Add Scheduler */}
+        {/* Activities Section for Parent */}
         {!isAdmin && (
           <>
-            <CNav variant="tabs" className="mb-0">
-              <CNavItem>
-                <CNavLink
-                  active={activeTab === 'activities'}
-                  onClick={() => setActiveTab('activities')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Activities
-                </CNavLink>
-              </CNavItem>
-              <CNavItem>
-                <CNavLink
-                  active={activeTab === 'scheduler'}
-                  onClick={() => setActiveTab('scheduler')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  Add Scheduler
-                </CNavLink>
-              </CNavItem>
-            </CNav>
-            <CTabContent>
-              <CTabPane visible={activeTab === 'activities' || activeTab === 'scheduler'}>
-                <div className="mt-3">
-                  <ActivityScheduler
-                    patientId={patient.id}
-                    patientName={`${patient.patient_fname} ${patient.patient_lname}`}
-                    defaultShowForm={activeTab === 'scheduler'}
-                  />
-                </div>
-              </CTabPane>
-            </CTabContent>
+            <div className="d-flex justify-content-end mb-3">
+              <CButton
+                color="primary"
+                onClick={() => {
+                  setEditActivity(null)
+                  setShowForm((prev) => !prev)
+                }}
+              >
+                {showForm ? 'Close Form' : 'Add Scheduler'}
+              </CButton>
+            </div>
+
+            {showForm && (
+              <SchedulerForm
+                patientId={patient.id}
+                editActivity={editActivity}
+                onSaved={() => {
+                  setRefreshKey((k) => k + 1)
+                  setEditActivity(null)
+                  setShowForm(false)
+                }}
+                onCancel={() => {
+                  setEditActivity(null)
+                  setShowForm(false)
+                }}
+              />
+            )}
+
+            <ActivitiesList
+              patientId={patient.id}
+              refreshKey={refreshKey}
+              onEdit={(activity) => {
+                setEditActivity(activity)
+                setShowForm(true)
+              }}
+            />
           </>
         )}
       </CCol>
