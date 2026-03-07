@@ -45,7 +45,7 @@ const INITIAL_FORM = {
   time: '',
 }
 
-const ActivityScheduler = ({ patientId }) => {
+const ActivityScheduler = ({ patientId, defaultShowForm = false }) => {
   const { showSuccess, showError, showWarning } = useToast()
   const [activities, setActivities] = useState([])
   const [form, setForm] = useState({ ...INITIAL_FORM })
@@ -316,6 +316,18 @@ const ActivityScheduler = ({ patientId }) => {
                   required
                 />
               </CCol>
+              <CCol md={6}>
+                <CFormLabel htmlFor="status">Activity Status</CFormLabel>
+                <CFormSelect
+                  id="status"
+                  name="status"
+                  value={form.status || 'Active'}
+                  onChange={handleChange}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </CFormSelect>
+              </CCol>
             </CRow>
 
             <div className="d-flex gap-2">
@@ -351,6 +363,7 @@ const ActivityScheduler = ({ patientId }) => {
                   <CTableHeaderCell>Task Type</CTableHeaderCell>
                   <CTableHeaderCell>Days</CTableHeaderCell>
                   <CTableHeaderCell>Time</CTableHeaderCell>
+                  <CTableHeaderCell>Status</CTableHeaderCell>
                   <CTableHeaderCell>Actions</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
@@ -361,6 +374,11 @@ const ActivityScheduler = ({ patientId }) => {
                     <CTableDataCell>{activity.actity_type || activity.taskType}</CTableDataCell>
                     <CTableDataCell>{formatDays(activity.days_flag || activity.days)}</CTableDataCell>
                     <CTableDataCell>{formatTime(activity.actity_datetime || activity.time)}</CTableDataCell>
+                    <CTableDataCell>
+                      <CBadge color={activity.actity_status === 1 ? 'success' : 'secondary'} shape="rounded-pill">
+                        {activity.actity_status === 1 ? 'Active' : 'Inactive'}
+                      </CBadge>
+                    </CTableDataCell>
                     <CTableDataCell>
                       <CButton
                         color="info"

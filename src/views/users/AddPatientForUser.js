@@ -122,11 +122,19 @@ const AddPatientForUser = () => {
     <CRow className="justify-content-center">
       <CCol lg={10}>
         <CCard className="mb-4">
-          <CCardHeader>
+          <CCardHeader className="d-flex justify-content-between align-items-center">
             <strong>Add Patient for User #{id}</strong>
+            <div className="d-flex gap-2">
+              <CButton color="primary" type="submit" form="addPatientForUserForm" disabled={submitting}>
+                {submitting ? <CSpinner size="sm" /> : 'Add Patient'}
+              </CButton>
+              <CButton color="secondary" onClick={() => navigate(`/users/${id}`)}>
+                Cancel
+              </CButton>
+            </div>
           </CCardHeader>
           <CCardBody>
-            <CForm onSubmit={handleSubmit}>
+            <CForm id="addPatientForUserForm" onSubmit={handleSubmit}>
               <CRow>
                 <CCol md={6}>
                   <div className="mb-3">
@@ -247,6 +255,7 @@ const AddPatientForUser = () => {
                       value={form.about}
                       onChange={(value) => setForm({ ...form, about: value })}
                       modules={quillModules}
+                      style={{ minHeight: '150px' }}
                     />
                   </div>
                 </CCol>
@@ -258,18 +267,12 @@ const AddPatientForUser = () => {
                       value={form.healthHistory}
                       onChange={(value) => setForm({ ...form, healthHistory: value })}
                       modules={quillModules}
+                      style={{ minHeight: '150px' }}
                     />
                   </div>
                 </CCol>
               </CRow>
-              <div className="d-flex gap-2 mt-2">
-                <CButton color="primary" type="submit" disabled={submitting}>
-                  {submitting ? <CSpinner size="sm" /> : 'Add Patient'}
-                </CButton>
-                <CButton color="secondary" onClick={() => navigate(`/users/${id}`)}>
-                  Cancel
-                </CButton>
-              </div>
+              {/* Buttons are in the card header */}
             </CForm>
           </CCardBody>
         </CCard>

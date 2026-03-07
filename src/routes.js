@@ -13,23 +13,15 @@ const AddSymptom = React.lazy(() => import('./views/symptoms/AddSymptom'))
 const Doctors = React.lazy(() => import('./views/doctors/Doctors'))
 const AddDoctor = React.lazy(() => import('./views/doctors/AddDoctor'))
 const DoctorDetails = React.lazy(() => import('./views/doctors/DoctorDetails'))
+const FAQs = React.lazy(() => import('./views/faqs/FAQs'))
+const MasterData = React.lazy(() => import('./views/masterdata/MasterData'))
 const ChangePassword = React.lazy(() => import('./views/pages/ChangePassword'))
-
-// Demo views
-const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
-const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
-const Cards = React.lazy(() => import('./views/base/cards/Cards'))
-const Tables = React.lazy(() => import('./views/base/tables/Tables'))
 const Charts = React.lazy(() => import('./views/charts/Charts'))
-const FormControl = React.lazy(() => import('./views/forms/form-control/FormControl'))
-const Select = React.lazy(() => import('./views/forms/select/Select'))
-const Modals = React.lazy(() => import('./views/notifications/modals/Modals'))
-const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
-  // SUJI routes — admin only
+  // Admin only
   { path: '/users/register', name: 'Register User', element: RegisterUser, adminOnly: true },
   { path: '/users/:id/add-patient', name: 'Add Patient for User', element: AddPatientForUser, adminOnly: true },
   { path: '/users/:id', name: 'User Details', element: UserDetails, adminOnly: true },
@@ -39,22 +31,14 @@ const routes = [
   { path: '/doctors', name: 'Doctors', element: Doctors, adminOnly: true },
   { path: '/symptoms/add', name: 'Add Symptom', element: AddSymptom, adminOnly: true },
   { path: '/symptoms', name: 'Symptoms', element: Symptoms, adminOnly: true },
-  // SUJI routes — all roles
+  { path: '/faqs', name: 'FAQs', element: FAQs, adminOnly: true },
+  { path: '/masterdata', name: 'Master Data', element: MasterData, adminOnly: true },
+  { path: '/charts', name: 'Charts', element: Charts, adminOnly: true },
+  // All roles
   { path: '/patients', name: 'Patients', element: Patients, exact: true },
   { path: '/patients/add', name: 'Add Patient', element: AddPatient },
   { path: '/patients/:id', name: 'Patient Details', element: PatientDetails },
   { path: '/change-password', name: 'Change Password', element: ChangePassword },
-  // Demo routes
-  { path: '/theme', name: 'Theme', element: Colors, exact: true },
-  { path: '/theme/colors', name: 'Colors', element: Colors },
-  { path: '/theme/typography', name: 'Typography', element: Typography },
-  { path: '/base/cards', name: 'Cards', element: Cards },
-  { path: '/base/tables', name: 'Tables', element: Tables },
-  { path: '/charts', name: 'Charts', element: Charts },
-  { path: '/forms/form-control', name: 'Form Control', element: FormControl },
-  { path: '/forms/select', name: 'Select', element: Select },
-  { path: '/notifications/modals', name: 'Modals', element: Modals },
-  { path: '/widgets', name: 'Widgets', element: Widgets },
 ]
 
 export default routes

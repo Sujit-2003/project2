@@ -1,0 +1,204 @@
+import React, { useEffect, useState } from 'react'
+import {
+  CCard,
+  CCardBody,
+  CCardHeader,
+  CCol,
+  CRow,
+  CForm,
+  CFormInput,
+  CFormTextarea,
+  CFormLabel,
+  CButton,
+  CSpinner,
+  CAlert,
+} from '@coreui/react'
+import CIcon from '@coreui/icons-react'
+import { cilPencil, cilSave, cilX } from '@coreui/icons'
+import { getMasterData, updateMasterData } from '../../services/masterdataService'
+import { useToast } from '../../components/ToastContext'
+
+const MasterData = () => {
+  const { showSuccess, showError } = useToast()
+  const [data, setData] = useState({
+    company_name: '',
+    contact_number: '',
+    email: '',
+    about: '',
+  })
+  const [original, setOriginal] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [editing, setEditing] = useState(false)
+
+  const loadData = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await getMasterData()
+      let master = null
+      if (res.code === 0 && res.data) {
+        // data could be an array or object
+        master = Array.isArray(res.data) ? res.data[0] : res.data
+      } else if (Array.isArray(res)) {
+        master = res[0]
+      } else if (res && !res.code) {
+        master = res
+      }
+
+      if (master) {
+        const formatted = {
+          company_name: master.company_name || '',
+          contact_number: master.contact_number || '',
+          email: master.email || '',
+          about: master.about || '',
+        }
+        setData(formatted)
+        setOriginal(formatted)
+      }
+    } catch (err) {
+      setError(err?.message || 'Failed to load master data.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const handleChange = (e) => {
+    setData({ ...data, [e.target.name]: e.target.value })
+  }
+
+  const handleCancel = () => {
+    if (original) {
+      setData({ ...original })
+    }
+    setEditing(false)
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await updateMasterData(data)
+      if (Number(res.code) === 0) {
+        showSuccess(res.message || 'Master data updated successfully!')
+        setOriginal({ ...data })
+        setEditing(false)
+      } else {
+        showError(res.message || 'Failed to update master data.')
+      }
+    } catch {
+      showError('Network error updating master data.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <CSpinner color="primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <CRow>
+        <CCol xs={12}>
+          <CAlert color="danger">{error}</CAlert>
+        </CCol>
+      </CRow>
+    )
+  }
+
+  return (
+    <CRow className="justify-content-center">
+      <CCol lg={8}>
+        <CCard className="mb-4">
+          <CCardHeader className="d-flex justify-content-between align-items-center">
+            <strong>Master Data</strong>
+            {!editing ? (
+              <CButton color="primary" size="sm" onClick={() => setEditing(true)}>
+                <CIcon icon={cilPencil} className="me-1" />
+                Edit
+              </CButton>
+            ) : (
+              <CButton color="secondary" size="sm" onClick={handleCancel}>
+                <CIcon icon={cilX} className="me-1" />
+                Cancel
+              </CButton>
+            )}
+          </CCardHeader>
+          <CCardBody>
+            <CForm onSubmit={handleSave}>
+              <div className="mb-3">
+                <CFormLabel>Company Name</CFormLabel>
+                <CFormInput
+                  name="company_name"
+                  value={data.company_name}
+                  onChange={handleChange}
+                  disabled={!editing}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div className="mb-3">
+                <CFormLabel>Contact Number</CFormLabel>
+                <CFormInput
+                  name="contact_number"
+                  value={data.contact_number}
+                  onChange={handleChange}
+                  disabled={!editing}
+                  placeholder="Enter contact number"
+                />
+              </div>
+              <div className="mb-3">
+                <CFormLabel>Email</CFormLabel>
+                <CFormInput
+                  name="email"
+                  type="email"
+                  value={data.email}
+                  onChange={handleChange}
+                  disabled={!editing}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="mb-3">
+                <CFormLabel>About</CFormLabel>
+                <CFormTextarea
+                  name="about"
+                  value={data.about}
+                  onChange={handleChange}
+                  rows={5}
+                  disabled={!editing}
+                  placeholder="Enter about section"
+                />
+              </div>
+              {editing && (
+                <div className="d-flex gap-2">
+                  <CButton color="primary" type="submit" disabled={saving}>
+                    {saving ? <CSpinner size="sm" /> : (
+                      <>
+                        <CIcon icon={cilSave} className="me-1" />
+                        Save
+                      </>
+                    )}
+                  </CButton>
+                  <CButton color="secondary" onClick={handleCancel}>
+                    Cancel
+                  </CButton>
+                </div>
+              )}
+            </CForm>
+          </CCardBody>
+        </CCard>
+      </CCol>
+    </CRow>
+  )
+}
+
+export default MasterData

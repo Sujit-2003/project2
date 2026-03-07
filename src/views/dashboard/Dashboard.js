@@ -30,7 +30,9 @@ import {
   cilCheckCircle,
   cilClock,
   cilMediaPlay,
+  cilUserFollow,
 } from '@coreui/icons'
+import { CChartBar, CChartDoughnut } from '@coreui/react-chartjs'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { getUsers } from '../../services/userService'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
@@ -124,6 +126,8 @@ const Dashboard = () => {
   // Admin state
   const [users, setUsers] = useState([])
   const [allPatients, setAllPatients] = useState([])
+  const [doctors, setDoctors] = useState([])
+  const [adminActivityCount, setAdminActivityCount] = useState(0)
 
   // Parent state
   const [patients, setPatients] = useState([])
@@ -152,6 +156,25 @@ const Dashboard = () => {
           setUsers(filtered)
           const pts = await getAllPatientsWithParent(filtered)
           setAllPatients(pts)
+
+          // Fetch doctors
+          const doctorRes = await getUsers(3)
+          let doctorList = []
+          if (Array.isArray(doctorRes)) doctorList = doctorRes
+          else if (Array.isArray(doctorRes.data)) doctorList = doctorRes.data
+          setDoctors(doctorList)
+
+          // Fetch activities for all patients
+          let totalActivities = 0
+          for (const p of pts) {
+            try {
+              const actRes = await getActivities(p.id)
+              if (Number(actRes.code) === 0 && Array.isArray(actRes.data)) {
+                totalActivities += actRes.data.length
+              }
+            } catch {}
+          }
+          setAdminActivityCount(totalActivities)
         } else {
           const umId = getUmId()
           const [patientRes, reminderRes] = await Promise.all([
@@ -241,24 +264,157 @@ const Dashboard = () => {
     return <CAlert color="danger">{error}</CAlert>
   }
 
-  // ─── Admin Dashboard (unchanged) ───
+  // ─── Admin Dashboard ───
   if (isAdmin) {
+    const maleCount = allPatients.filter((p) => p.user_gender === 'Male').length
+    const femaleCount = allPatients.filter((p) => p.user_gender === 'Female').length
+    const otherCount = allPatients.length - maleCount - femaleCount
+
+    const adminStatCards = [
+      {
+        icon: cilPeople,
+        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        label: 'Parents',
+        count: users.length,
+      },
+      {
+        icon: cilChildFriendly,
+        gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+        label: 'Patients',
+        count: allPatients.length,
+      },
+      {
+        icon: cilUserFollow,
+        gradient: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
+        label: 'Doctors',
+        count: doctors.length,
+      },
+      {
+        icon: cilTask,
+        gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        label: 'Activities',
+        count: adminActivityCount,
+      },
+    ]
+
     return (
       <>
+        {/* ─── Gradient Stat Cards ─── */}
         <CRow className="mb-4" xs={{ gutter: 4 }}>
-          <CCol sm={6} lg={4}>
-            <StatCard icon={cilPeople} color="primary" label="Users" count={users.length} />
+          {adminStatCards.map((card, idx) => (
+            <CCol sm={6} lg={3} key={idx}>
+              <CCard
+                className="mb-3 border-0"
+                style={{
+                  borderRadius: '16px',
+                  background: card.gradient,
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                  transition: 'transform 0.3s ease',
+                  cursor: 'default',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+              >
+                <CCardBody className="d-flex align-items-center gap-3 py-4 px-4">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      backgroundColor: 'rgba(255,255,255,0.25)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CIcon icon={card.icon} height={28} style={{ color: '#fff' }} />
+                  </div>
+                  <div>
+                    <div className="fs-2 fw-bold" style={{ color: '#fff' }}>{card.count}</div>
+                    <div className="small text-uppercase fw-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                      {card.label}
+                    </div>
+                  </div>
+                </CCardBody>
+              </CCard>
+            </CCol>
+          ))}
+        </CRow>
+
+        {/* ─── Charts Section ─── */}
+        <CRow className="mb-4" xs={{ gutter: 4 }}>
+          <CCol md={7}>
+            <CCard className="border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
+              <CCardHeader className="bg-transparent border-bottom-0 pt-3">
+                <strong>Registration Overview</strong>
+              </CCardHeader>
+              <CCardBody>
+                <CChartBar
+                  data={{
+                    labels: ['Parents', 'Patients', 'Doctors'],
+                    datasets: [
+                      {
+                        label: 'Count',
+                        backgroundColor: ['#667eea', '#38ef7d', '#a855f7'],
+                        data: [users.length, allPatients.length, doctors.length],
+                        borderRadius: 8,
+                        barThickness: 48,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: {
+                      legend: { display: false },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                      },
+                    },
+                  }}
+                />
+              </CCardBody>
+            </CCard>
           </CCol>
-          <CCol sm={6} lg={4}>
-            <StatCard icon={cilUser} color="warning" label="Parents" count={users.length} />
-          </CCol>
-          <CCol sm={6} lg={4}>
-            <StatCard icon={cilChildFriendly} color="success" label="Patients" count={allPatients.length} />
+          <CCol md={5}>
+            <CCard className="border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
+              <CCardHeader className="bg-transparent border-bottom-0 pt-3">
+                <strong>Gender Distribution</strong>
+              </CCardHeader>
+              <CCardBody className="d-flex align-items-center justify-content-center">
+                {allPatients.length === 0 ? (
+                  <p className="text-body-secondary mb-0">No patient data available.</p>
+                ) : (
+                  <CChartDoughnut
+                    data={{
+                      labels: ['Male', 'Female', 'Other'],
+                      datasets: [
+                        {
+                          data: [maleCount, femaleCount, otherCount],
+                          backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56'],
+                          hoverBackgroundColor: ['#2b8ad4', '#e8577a', '#e6b94d'],
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      cutout: '70%',
+                      plugins: {
+                        legend: {
+                          position: 'bottom',
+                        },
+                      },
+                    }}
+                  />
+                )}
+              </CCardBody>
+            </CCard>
           </CCol>
         </CRow>
 
-        <CCard className="mb-4">
-          <CCardHeader><strong>Recent Users</strong></CCardHeader>
+        {/* ─── Recent Users ─── */}
+        <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+          <CCardHeader className="bg-transparent border-bottom-0 pt-3"><strong>Recent Users</strong></CCardHeader>
           <CCardBody>
             <CTable hover responsive>
               <CTableHead>
@@ -295,9 +451,10 @@ const Dashboard = () => {
           </CCardBody>
         </CCard>
 
+        {/* ─── Recent Patients ─── */}
         {allPatients.length > 0 && (
-          <CCard className="mb-4">
-            <CCardHeader><strong>Recent Patients</strong></CCardHeader>
+          <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+            <CCardHeader className="bg-transparent border-bottom-0 pt-3"><strong>Recent Patients</strong></CCardHeader>
             <CCardBody>
               <CTable hover responsive>
                 <CTableHead>

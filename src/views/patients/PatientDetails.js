@@ -10,9 +10,14 @@ import {
   CSpinner,
   CAlert,
   CBadge,
+  CNav,
+  CNavItem,
+  CNavLink,
+  CTabContent,
+  CTabPane,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilArrowLeft, cilCalendar, cilList } from '@coreui/icons'
+import { cilArrowLeft } from '@coreui/icons'
 import ActivityScheduler from './ActivityScheduler'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
@@ -40,7 +45,7 @@ const PatientDetails = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [countries, setCountries] = useState([])
-  const [showScheduler, setShowScheduler] = useState(false)
+  const [activeTab, setActiveTab] = useState('activities')
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -104,9 +109,10 @@ const PatientDetails = () => {
 
   return (
     <CRow className="justify-content-center">
-      <CCol lg={8}>
-        <CCard className="mb-4">
-          <CCardHeader className="d-flex justify-content-between align-items-center">
+      <CCol lg={10}>
+        {/* Patient Info Card */}
+        <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
+          <CCardHeader className="d-flex justify-content-between align-items-center bg-transparent border-bottom-0 pt-3">
             <strong>Patient Details</strong>
             <CButton color="light" size="sm" onClick={() => navigate('/patients')}>
               <CIcon icon={cilArrowLeft} className="me-1" />
@@ -179,35 +185,44 @@ const PatientDetails = () => {
                 </CCol>
               </CRow>
             )}
-
-            {!isAdmin && (
-              <div className="d-flex gap-2 mt-4">
-                <CButton
-                  color="primary"
-                  size="sm"
-                  onClick={() => setShowScheduler(!showScheduler)}
-                >
-                  <CIcon icon={cilCalendar} className="me-1" />
-                  {showScheduler ? 'Hide Scheduler' : 'Add Scheduler'}
-                </CButton>
-                <CButton
-                  color="info"
-                  size="sm"
-                  onClick={() => setShowScheduler(true)}
-                >
-                  <CIcon icon={cilList} className="me-1" />
-                  Activities
-                </CButton>
-              </div>
-            )}
           </CCardBody>
         </CCard>
 
-        {!isAdmin && showScheduler && (
-          <ActivityScheduler
-            patientId={patient.id}
-            patientName={`${patient.patient_fname} ${patient.patient_lname}`}
-          />
+        {/* Tabs for Parent — Activities & Add Scheduler */}
+        {!isAdmin && (
+          <>
+            <CNav variant="tabs" className="mb-0">
+              <CNavItem>
+                <CNavLink
+                  active={activeTab === 'activities'}
+                  onClick={() => setActiveTab('activities')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Activities
+                </CNavLink>
+              </CNavItem>
+              <CNavItem>
+                <CNavLink
+                  active={activeTab === 'scheduler'}
+                  onClick={() => setActiveTab('scheduler')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  Add Scheduler
+                </CNavLink>
+              </CNavItem>
+            </CNav>
+            <CTabContent>
+              <CTabPane visible={activeTab === 'activities' || activeTab === 'scheduler'}>
+                <div className="mt-3">
+                  <ActivityScheduler
+                    patientId={patient.id}
+                    patientName={`${patient.patient_fname} ${patient.patient_lname}`}
+                    defaultShowForm={activeTab === 'scheduler'}
+                  />
+                </div>
+              </CTabPane>
+            </CTabContent>
+          </>
         )}
       </CCol>
     </CRow>
