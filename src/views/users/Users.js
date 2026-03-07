@@ -112,7 +112,7 @@ const Users = () => {
             />
 
             {loading && (
-              <div className="text-center py-4">
+              <div className="suji-loading">
                 <CSpinner color="primary" />
               </div>
             )}
@@ -135,8 +135,8 @@ const Users = () => {
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={8} className="text-center text-muted">
-                          No users found.
+                        <CTableDataCell colSpan={8} className="text-center">
+                          <div className="suji-empty-state">No users found.</div>
                         </CTableDataCell>
                       </CTableRow>
                     ) : (
@@ -151,7 +151,7 @@ const Users = () => {
                                 <CIcon icon={cilUser} />
                               </CAvatar>
                             </CTableDataCell>
-                            <CTableDataCell>{decryptField(user.username || user.name)}</CTableDataCell>
+                            <CTableDataCell className="fw-semibold">{decryptField(user.username || user.name)}</CTableDataCell>
                             <CTableDataCell>{decryptSafe(user.emailid || user.email)}</CTableDataCell>
                             <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
                             <CTableDataCell>
@@ -180,7 +180,7 @@ const Users = () => {
                 </CTable>
 
                 {totalPages > 1 && (
-                  <CPagination className="justify-content-center">
+                  <CPagination className="justify-content-center mt-3">
                     <CPaginationItem
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage(currentPage - 1)}

@@ -98,18 +98,24 @@ function isTaskPast(timeStr) {
   return taskDate.getTime() < now.getTime()
 }
 
-const StatCard = ({ icon, color, label, count }) => (
-  <CCard className="mb-3 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-    <CCardBody className="d-flex align-items-center gap-3 py-4">
-      <div
-        className={`rounded-circle d-flex align-items-center justify-content-center bg-${color} bg-opacity-10`}
-        style={{ width: 56, height: 56 }}
-      >
-        <CIcon icon={icon} height={28} className={`text-${color}`} />
+const GRADIENTS = {
+  purple: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  green: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+  violet: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
+  pink: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  blue: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  orange: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+}
+
+const GradientStatCard = ({ icon, gradient, label, count }) => (
+  <CCard className="suji-stat-card border-0" style={{ background: gradient }}>
+    <CCardBody className="d-flex align-items-center gap-3">
+      <div className="stat-icon">
+        <CIcon icon={icon} height={26} style={{ color: '#fff' }} />
       </div>
       <div>
-        <div className="fs-3 fw-bold">{count}</div>
-        <div className="text-body-secondary small text-uppercase fw-semibold">{label}</div>
+        <div className="stat-count">{count}</div>
+        <div className="stat-label">{label}</div>
       </div>
     </CCardBody>
   </CCard>
@@ -252,9 +258,19 @@ const Dashboard = () => {
     return display
   }
 
+  const getCountryName = (user) => {
+    if (user.countryid) {
+      const countryObj = countries.find(
+        (c) => Number(c.country_id) === Number(user.countryid),
+      )
+      if (countryObj) return countryObj.country_name
+    }
+    return user.country || '-'
+  }
+
   if (loading) {
     return (
-      <div className="text-center py-5">
+      <div className="suji-loading">
         <CSpinner color="primary" />
       </div>
     )
@@ -271,79 +287,28 @@ const Dashboard = () => {
     const otherCount = allPatients.length - maleCount - femaleCount
 
     const adminStatCards = [
-      {
-        icon: cilPeople,
-        gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        label: 'Parents',
-        count: users.length,
-      },
-      {
-        icon: cilChildFriendly,
-        gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-        label: 'Patients',
-        count: allPatients.length,
-      },
-      {
-        icon: cilUserFollow,
-        gradient: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
-        label: 'Doctors',
-        count: doctors.length,
-      },
-      {
-        icon: cilTask,
-        gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        label: 'Activities',
-        count: adminActivityCount,
-      },
+      { icon: cilPeople, gradient: GRADIENTS.purple, label: 'Parents', count: users.length },
+      { icon: cilChildFriendly, gradient: GRADIENTS.green, label: 'Patients', count: allPatients.length },
+      { icon: cilUserFollow, gradient: GRADIENTS.violet, label: 'Doctors', count: doctors.length },
+      { icon: cilTask, gradient: GRADIENTS.pink, label: 'Activities', count: adminActivityCount },
     ]
 
     return (
       <>
-        {/* ─── Gradient Stat Cards ─── */}
+        {/* Gradient Stat Cards */}
         <CRow className="mb-4" xs={{ gutter: 4 }}>
           {adminStatCards.map((card, idx) => (
             <CCol sm={6} lg={3} key={idx}>
-              <CCard
-                className="mb-3 border-0"
-                style={{
-                  borderRadius: '16px',
-                  background: card.gradient,
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-                  transition: 'transform 0.3s ease',
-                  cursor: 'default',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-              >
-                <CCardBody className="d-flex align-items-center gap-3 py-4 px-4">
-                  <div
-                    className="rounded-circle d-flex align-items-center justify-content-center"
-                    style={{
-                      width: 56,
-                      height: 56,
-                      backgroundColor: 'rgba(255,255,255,0.25)',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <CIcon icon={card.icon} height={28} style={{ color: '#fff' }} />
-                  </div>
-                  <div>
-                    <div className="fs-2 fw-bold" style={{ color: '#fff' }}>{card.count}</div>
-                    <div className="small text-uppercase fw-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                      {card.label}
-                    </div>
-                  </div>
-                </CCardBody>
-              </CCard>
+              <GradientStatCard {...card} />
             </CCol>
           ))}
         </CRow>
 
-        {/* ─── Charts Section ─── */}
+        {/* Charts Section */}
         <CRow className="mb-4" xs={{ gutter: 4 }}>
           <CCol md={7}>
-            <CCard className="border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
-              <CCardHeader className="bg-transparent border-bottom-0 pt-3">
+            <CCard className="h-100">
+              <CCardHeader className="border-bottom-0">
                 <strong>Registration Overview</strong>
               </CCardHeader>
               <CCardBody>
@@ -362,14 +327,9 @@ const Dashboard = () => {
                   }}
                   options={{
                     responsive: true,
-                    plugins: {
-                      legend: { display: false },
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                      y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 },
-                      },
+                      y: { beginAtZero: true, ticks: { stepSize: 1 } },
                     },
                   }}
                 />
@@ -377,8 +337,8 @@ const Dashboard = () => {
             </CCard>
           </CCol>
           <CCol md={5}>
-            <CCard className="border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
-              <CCardHeader className="bg-transparent border-bottom-0 pt-3">
+            <CCard className="h-100">
+              <CCardHeader className="border-bottom-0">
                 <strong>Gender Distribution</strong>
               </CCardHeader>
               <CCardBody className="d-flex align-items-center justify-content-center">
@@ -399,11 +359,7 @@ const Dashboard = () => {
                     options={{
                       responsive: true,
                       cutout: '70%',
-                      plugins: {
-                        legend: {
-                          position: 'bottom',
-                        },
-                      },
+                      plugins: { legend: { position: 'bottom' } },
                     }}
                   />
                 )}
@@ -412,9 +368,9 @@ const Dashboard = () => {
           </CCol>
         </CRow>
 
-        {/* ─── Recent Users ─── */}
-        <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-          <CCardHeader className="bg-transparent border-bottom-0 pt-3"><strong>Recent Users</strong></CCardHeader>
+        {/* Recent Users */}
+        <CCard className="mb-4">
+          <CCardHeader><strong>Recent Users</strong></CCardHeader>
           <CCardBody>
             <CTable hover responsive>
               <CTableHead>
@@ -439,10 +395,10 @@ const Dashboard = () => {
                       <CTableDataCell>
                         <CAvatar color="secondary" size="md"><CIcon icon={cilUser} /></CAvatar>
                       </CTableDataCell>
-                      <CTableDataCell>{decryptField(user.username || user.name)}</CTableDataCell>
+                      <CTableDataCell className="fw-semibold">{decryptField(user.username || user.name)}</CTableDataCell>
                       <CTableDataCell>{decryptSafe(user.emailid || user.email)}</CTableDataCell>
                       <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
-                      <CTableDataCell>{user.countryid || user.country || '-'}</CTableDataCell>
+                      <CTableDataCell>{getCountryName(user)}</CTableDataCell>
                     </CTableRow>
                   ))
                 )}
@@ -451,10 +407,10 @@ const Dashboard = () => {
           </CCardBody>
         </CCard>
 
-        {/* ─── Recent Patients ─── */}
+        {/* Recent Patients */}
         {allPatients.length > 0 && (
-          <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-            <CCardHeader className="bg-transparent border-bottom-0 pt-3"><strong>Recent Patients</strong></CCardHeader>
+          <CCard className="mb-4">
+            <CCardHeader><strong>Recent Patients</strong></CCardHeader>
             <CCardBody>
               <CTable hover responsive>
                 <CTableHead>
@@ -476,7 +432,7 @@ const Dashboard = () => {
                     return (
                       <CTableRow key={p.id || index}>
                         <CTableDataCell>{index + 1}</CTableDataCell>
-                        <CTableDataCell>{p.patient_fname} {p.patient_lname}</CTableDataCell>
+                        <CTableDataCell className="fw-semibold">{p.patient_fname} {p.patient_lname}</CTableDataCell>
                         <CTableDataCell>
                           <CButton color="link" size="sm" className="p-0 text-decoration-none" onClick={() => navigate(`/users/${p.um_id}`)}>
                             {parentName || '-'}
@@ -485,7 +441,7 @@ const Dashboard = () => {
                         <CTableDataCell>{p.p_relationship}</CTableDataCell>
                         <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
                         <CTableDataCell>
-                          <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'}>{p.user_gender}</CBadge>
+                          <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'} shape="rounded-pill">{p.user_gender}</CBadge>
                         </CTableDataCell>
                         <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
                         <CTableDataCell>
@@ -518,14 +474,20 @@ const Dashboard = () => {
     .filter((t) => t.actity_status === 1)
     .sort((a, b) => (a.actity_datetime || '').localeCompare(b.actity_datetime || ''))
 
+  const parentStatCards = [
+    { icon: cilChildFriendly, gradient: GRADIENTS.blue, label: 'Total Patients', count: patients.length },
+    { icon: cilTask, gradient: GRADIENTS.purple, label: "Today's Tasks", count: todayTasks.length },
+    { icon: cilBell, gradient: GRADIENTS.orange, label: 'Upcoming Reminders', count: reminders.length },
+    { icon: cilCheckCircle, gradient: GRADIENTS.green, label: 'Completed Tasks', count: completedTasks.length },
+  ]
+
   return (
     <>
-      {/* ─── Top Alert Bar ─── */}
+      {/* Top Alert Bar */}
       {activeAlert && (
         <CAlert
           color="danger"
-          className="d-flex align-items-center justify-content-between mb-3 shadow-sm"
-          style={{ borderRadius: '10px' }}
+          className="d-flex align-items-center justify-content-between mb-3"
         >
           <div className="d-flex align-items-center gap-2">
             <CIcon icon={cilBell} height={20} />
@@ -548,13 +510,12 @@ const Dashboard = () => {
         </CAlert>
       )}
 
-      {/* ─── Reminder Notifications ─── */}
+      {/* Reminder Notifications */}
       {reminders.length > 0 && reminders.slice(0, 3).map((r, i) => (
         <CAlert
           key={i}
           color="warning"
           className="d-flex align-items-center justify-content-between mb-2"
-          style={{ borderRadius: '10px' }}
         >
           <div>
             <strong>Reminder:</strong>{' '}
@@ -572,25 +533,18 @@ const Dashboard = () => {
         </CAlert>
       ))}
 
-      {/* ─── 1. Summary Cards ─── */}
-      <CRow className="mb-4" xs={{ gutter: 3 }}>
-        <CCol xs={6} lg={3}>
-          <StatCard icon={cilChildFriendly} color="primary" label="Total Patients" count={patients.length} />
-        </CCol>
-        <CCol xs={6} lg={3}>
-          <StatCard icon={cilTask} color="info" label="Today's Tasks" count={todayTasks.length} />
-        </CCol>
-        <CCol xs={6} lg={3}>
-          <StatCard icon={cilBell} color="warning" label="Upcoming Reminders" count={reminders.length} />
-        </CCol>
-        <CCol xs={6} lg={3}>
-          <StatCard icon={cilCheckCircle} color="success" label="Completed Tasks" count={completedTasks.length} />
-        </CCol>
+      {/* 1. Gradient Summary Cards (matching admin quality) */}
+      <CRow className="mb-4" xs={{ gutter: 4 }}>
+        {parentStatCards.map((card, idx) => (
+          <CCol xs={6} lg={3} key={idx}>
+            <GradientStatCard {...card} />
+          </CCol>
+        ))}
       </CRow>
 
-      {/* ─── 2. Today's Schedule (Timeline) ─── */}
-      <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-        <CCardHeader className="bg-transparent border-bottom-0 pt-3">
+      {/* 2. Today's Schedule (Timeline) */}
+      <CCard className="mb-4">
+        <CCardHeader>
           <div className="d-flex align-items-center gap-2">
             <CIcon icon={cilClock} height={20} className="text-primary" />
             <strong>Today&apos;s Patient Schedule</strong>
@@ -598,10 +552,9 @@ const Dashboard = () => {
         </CCardHeader>
         <CCardBody>
           {todayTasksSorted.length === 0 ? (
-            <p className="text-body-secondary mb-0">No tasks scheduled for today.</p>
+            <div className="suji-empty-state">No tasks scheduled for today.</div>
           ) : (
             <div className="position-relative" style={{ paddingLeft: '40px' }}>
-              {/* Vertical line */}
               <div
                 className="position-absolute bg-primary bg-opacity-25"
                 style={{ left: '18px', top: '8px', bottom: '8px', width: '2px' }}
@@ -611,7 +564,6 @@ const Dashboard = () => {
                 const past = isTaskPast(task.actity_datetime)
                 return (
                   <div key={task.id || idx} className="d-flex align-items-start mb-3 position-relative">
-                    {/* Timeline dot */}
                     <div
                       className={`position-absolute rounded-circle ${
                         dueSoon ? 'bg-warning' : past ? 'bg-secondary' : 'bg-primary'
@@ -660,9 +612,9 @@ const Dashboard = () => {
         </CCardBody>
       </CCard>
 
-      {/* ─── 3. Upcoming Patient Tasks ─── */}
-      <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-        <CCardHeader className="bg-transparent border-bottom-0 pt-3">
+      {/* 3. Upcoming Patient Tasks */}
+      <CCard className="mb-4">
+        <CCardHeader>
           <div className="d-flex align-items-center gap-2">
             <CIcon icon={cilTask} height={20} className="text-info" />
             <strong>Upcoming Patient Tasks</strong>
@@ -670,7 +622,7 @@ const Dashboard = () => {
         </CCardHeader>
         <CCardBody>
           {upcomingTasks.length === 0 ? (
-            <p className="text-body-secondary mb-0">No upcoming tasks.</p>
+            <div className="suji-empty-state">No upcoming tasks.</div>
           ) : (
             <CTable hover responsive align="middle">
               <CTableHead>
@@ -725,9 +677,9 @@ const Dashboard = () => {
         </CCardBody>
       </CCard>
 
-      {/* ─── 4. Patients Overview ─── */}
-      <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: '12px' }}>
-        <CCardHeader className="bg-transparent border-bottom-0 pt-3 d-flex justify-content-between align-items-center">
+      {/* 4. Patients Overview */}
+      <CCard className="mb-4">
+        <CCardHeader className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-2">
             <CIcon icon={cilChildFriendly} height={20} className="text-primary" />
             <strong>Patients Overview</strong>
@@ -739,7 +691,7 @@ const Dashboard = () => {
         </CCardHeader>
         <CCardBody>
           {patients.length === 0 ? (
-            <p className="text-body-secondary mb-0">No patients found. Add your first patient.</p>
+            <div className="suji-empty-state">No patients found. Add your first patient.</div>
           ) : (
             <CRow xs={{ gutter: 3 }}>
               {patients.map((p) => {
@@ -754,10 +706,17 @@ const Dashboard = () => {
                 return (
                   <CCol sm={6} lg={4} xl={3} key={p.id}>
                     <CCard
-                      className="h-100 border-0 shadow-sm"
-                      style={{ borderRadius: '12px', transition: 'transform 0.2s' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                      className="h-100"
+                      style={{ transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = 'var(--suji-shadow-md)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = ''
+                      }}
+                      onClick={() => navigate(`/patients/${p.id}`)}
                     >
                       <CCardBody className="text-center py-4">
                         <CAvatar
@@ -774,7 +733,7 @@ const Dashboard = () => {
                           {age ? `${age} yrs` : '-'} · {p.user_gender}
                         </div>
                         <div className="small mb-1">
-                          <CBadge color="light" textColor="dark" className="me-1">
+                          <CBadge color="light" textColor="dark">
                             {p.p_relationship || '-'}
                           </CBadge>
                         </div>
@@ -791,15 +750,6 @@ const Dashboard = () => {
                             No tasks today
                           </div>
                         )}
-                        <CButton
-                          color="primary"
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => navigate(`/patients/${p.id}`)}
-                        >
-                          View Details
-                        </CButton>
                       </CCardBody>
                     </CCard>
                   </CCol>

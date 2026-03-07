@@ -1,12 +1,72 @@
-@use "@coreui/coreui/scss/coreui" as * with ( 
+@use "@coreui/coreui/scss/coreui" as * with (
   $enable-deprecation-messages: false,
 );
 @use "@coreui/chartjs/scss/coreui-chartjs";
 @use "vendors/simplebar";
 
-body {
-  background-color: var(--cui-tertiary-bg);
+/* =============================================
+   SUJI Design System
+   ============================================= */
+
+:root {
+  /* Primary palette */
+  --suji-primary: #4f46e5;
+  --suji-primary-light: #eef2ff;
+  --suji-primary-dark: #3730a3;
+
+  /* Semantic colors */
+  --suji-success: #059669;
+  --suji-warning: #d97706;
+  --suji-danger: #dc2626;
+  --suji-info: #0891b2;
+
+  /* Surfaces */
+  --suji-bg: #f8fafc;
+  --suji-surface: #ffffff;
+  --suji-border: #e2e8f0;
+  --suji-border-light: #f1f5f9;
+
+  /* Text */
+  --suji-text-primary: #0f172a;
+  --suji-text-secondary: #64748b;
+  --suji-text-muted: #94a3b8;
+
+  /* Spacing scale (4px base) */
+  --suji-space-1: 0.25rem;
+  --suji-space-2: 0.5rem;
+  --suji-space-3: 0.75rem;
+  --suji-space-4: 1rem;
+  --suji-space-5: 1.25rem;
+  --suji-space-6: 1.5rem;
+  --suji-space-8: 2rem;
+
+  /* Radius */
+  --suji-radius-sm: 6px;
+  --suji-radius: 10px;
+  --suji-radius-lg: 14px;
+  --suji-radius-xl: 18px;
+
+  /* Shadows */
+  --suji-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --suji-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --suji-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --suji-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.04);
+
+  /* Transitions */
+  --suji-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ─── Base ─── */
+
+body {
+  background-color: var(--suji-bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--suji-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Layout ─── */
 
 .wrapper {
   width: 100%;
@@ -17,7 +77,7 @@ body {
 
 .header > .container-fluid,
 .sidebar-header {
-  min-height: calc(4rem + 1px); // stylelint-disable-line function-disallowed-list
+  min-height: calc(4rem + 1px);
 }
 
 .sidebar-brand-full {
@@ -33,7 +93,7 @@ body {
   .nav-link {
     display: flex;
     align-items: center;
-    min-height: calc(4rem + 1px); // stylelint-disable-line function-disallowed-list
+    min-height: calc(4rem + 1px);
   }
 }
 
@@ -52,16 +112,450 @@ body {
   min-height: 3rem;
 }
 
-.footer {
-  min-height: calc(3rem + 1px); // stylelint-disable-line function-disallowed-list
+/* ─── Header polish ─── */
+
+.header {
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid var(--suji-border) !important;
 }
 
+/* ─── Sidebar polish ─── */
+
+.sidebar {
+  border-right: none !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-nav .nav-link {
+  border-radius: var(--suji-radius-sm);
+  margin: 2px 12px;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all var(--suji-transition);
+}
+
+.sidebar-nav .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-nav .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-nav .nav-group-toggle::after {
+  transition: transform var(--suji-transition);
+}
+
+/* ─── Cards ─── */
+
+.card {
+  border: 1px solid var(--suji-border-light);
+  border-radius: var(--suji-radius-lg) !important;
+  box-shadow: var(--suji-shadow-sm);
+  transition: box-shadow var(--suji-transition), transform var(--suji-transition);
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: var(--suji-shadow);
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid var(--suji-border-light);
+  padding: var(--suji-space-4) var(--suji-space-6);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+
+.card-body {
+  padding: var(--suji-space-6);
+}
+
+/* ─── Tables ─── */
+
+.table {
+  font-size: 0.875rem;
+
+  th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--suji-text-secondary);
+    border-bottom: 2px solid var(--suji-border);
+    padding: var(--suji-space-3) var(--suji-space-4);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: var(--suji-space-3) var(--suji-space-4);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--suji-border-light);
+    color: var(--suji-text-primary);
+  }
+
+  tbody tr {
+    transition: background-color var(--suji-transition);
+
+    &:hover {
+      background-color: var(--suji-primary-light) !important;
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+}
+
+/* ─── Badges ─── */
+
+.badge {
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  padding: 0.35em 0.75em;
+}
+
+/* ─── Buttons ─── */
+
+.btn {
+  font-weight: 500;
+  font-size: 0.875rem;
+  border-radius: var(--suji-radius-sm);
+  transition: all var(--suji-transition);
+}
+
+.btn-primary {
+  background-color: var(--suji-primary);
+  border-color: var(--suji-primary);
+
+  &:hover {
+    background-color: var(--suji-primary-dark);
+    border-color: var(--suji-primary-dark);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  }
+}
+
+/* ─── Forms ─── */
+
+.form-control,
+.form-select {
+  border-radius: var(--suji-radius-sm);
+  border-color: var(--suji-border);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  transition: border-color var(--suji-transition), box-shadow var(--suji-transition);
+
+  &:focus {
+    border-color: var(--suji-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  }
+}
+
+.form-label {
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: var(--suji-text-secondary);
+  margin-bottom: 0.375rem;
+}
+
+/* ─── Pagination ─── */
+
+.pagination {
+  gap: 4px;
+}
+
+.page-item .page-link {
+  border-radius: var(--suji-radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  color: var(--suji-text-secondary);
+  padding: 0.375rem 0.75rem;
+  transition: all var(--suji-transition);
+}
+
+.page-item.active .page-link {
+  background-color: var(--suji-primary);
+  color: white;
+}
+
+.page-item .page-link:hover {
+  background-color: var(--suji-primary-light);
+  color: var(--suji-primary);
+}
+
+/* ─── Accordion (FAQ) ─── */
+
+.accordion-item {
+  border: 1px solid var(--suji-border-light);
+  border-radius: var(--suji-radius) !important;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.accordion-button {
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 1rem 1.25rem;
+  background-color: transparent;
+  color: var(--suji-text-primary);
+
+  &:not(.collapsed) {
+    background-color: var(--suji-primary-light);
+    color: var(--suji-primary);
+    box-shadow: none;
+  }
+
+  &:focus {
+    box-shadow: none;
+    border-color: var(--suji-border);
+  }
+}
+
+.accordion-body {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--suji-text-secondary);
+  line-height: 1.6;
+}
+
+/* ─── Alerts ─── */
+
+.alert {
+  border-radius: var(--suji-radius);
+  font-size: 0.875rem;
+  border: none;
+}
+
+/* ─── Footer ─── */
+
+.footer {
+  min-height: calc(3rem + 1px);
+  font-size: 0.8125rem;
+  color: var(--suji-text-muted);
+  border-top: 1px solid var(--suji-border-light);
+}
+
+/* ─── Stat Card (gradient) ─── */
+
+.suji-stat-card {
+  border: none !important;
+  border-radius: var(--suji-radius-xl) !important;
+  box-shadow: var(--suji-shadow-md);
+  transition: transform var(--suji-transition), box-shadow var(--suji-transition);
+  cursor: default;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--suji-shadow-hover);
+  }
+
+  .card-body {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-count {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.85);
+  }
+}
+
+/* ─── Page Header Pattern ─── */
+
+.suji-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--suji-space-4) var(--suji-space-6);
+  background: transparent;
+  border-bottom: 1px solid var(--suji-border-light);
+
+  .page-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--suji-text-primary);
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+}
+
+/* ─── Patient Profile Card ─── */
+
+.suji-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--suji-border-light);
+  margin-bottom: 1.25rem;
+}
+
+.suji-profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.suji-detail-row {
+  display: flex;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--suji-border-light);
+  font-size: 0.875rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .detail-label {
+    width: 160px;
+    flex-shrink: 0;
+    font-weight: 500;
+    color: var(--suji-text-secondary);
+  }
+
+  .detail-value {
+    flex: 1;
+    color: var(--suji-text-primary);
+  }
+}
+
+/* ─── Search Input ─── */
+
+.suji-search {
+  max-width: 300px;
+  position: relative;
+}
+
+.suji-search .form-control {
+  padding-left: 2.25rem;
+  background-color: var(--suji-bg);
+  border-color: transparent;
+
+  &:focus {
+    background-color: #fff;
+    border-color: var(--suji-primary);
+  }
+}
+
+/* ─── Empty State ─── */
+
+.suji-empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--suji-text-muted);
+  font-size: 0.875rem;
+}
+
+/* ─── Modal polish ─── */
+
+.modal-content {
+  border-radius: var(--suji-radius-lg);
+  border: none;
+  box-shadow: var(--suji-shadow-md);
+}
+
+.modal-header {
+  border-bottom: 1px solid var(--suji-border-light);
+  padding: 1rem 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* ─── Spinner ─── */
+
+.suji-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+}
+
+/* ─── Dark mode overrides ─── */
+
 @include color-mode(dark) {
+  :root {
+    --suji-bg: #0f172a;
+    --suji-surface: #1e293b;
+    --suji-border: #334155;
+    --suji-border-light: #1e293b;
+    --suji-text-primary: #f1f5f9;
+    --suji-text-secondary: #94a3b8;
+    --suji-text-muted: #64748b;
+    --suji-primary-light: rgba(79, 70, 229, 0.15);
+  }
+
   body {
-    background-color: var(--cui-dark-bg-subtle);
+    background-color: var(--suji-bg);
+  }
+
+  .header {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    border-bottom-color: var(--suji-border) !important;
+  }
+
+  .card {
+    background-color: var(--suji-surface);
+    border-color: var(--suji-border);
+  }
+
+  .table tbody tr:hover {
+    background-color: rgba(79, 70, 229, 0.08) !important;
   }
 
   .footer {
     --cui-footer-bg: var(--cui-body-bg);
+    border-top-color: var(--suji-border);
+  }
+
+  .form-control,
+  .form-select {
+    background-color: var(--suji-surface);
+    border-color: var(--suji-border);
+    color: var(--suji-text-primary);
+  }
+
+  .accordion-button:not(.collapsed) {
+    background-color: rgba(79, 70, 229, 0.12);
+  }
+
+  .accordion-item {
+    border-color: var(--suji-border);
+    background-color: var(--suji-surface);
   }
 }

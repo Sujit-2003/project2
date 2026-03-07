@@ -85,7 +85,7 @@ const Symptoms = () => {
             />
 
             {loading && (
-              <div className="text-center py-4">
+              <div className="suji-loading">
                 <CSpinner color="primary" />
               </div>
             )}
@@ -105,8 +105,8 @@ const Symptoms = () => {
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={5} className="text-center text-muted">
-                          No symptoms found.
+                        <CTableDataCell colSpan={5} className="text-center">
+                          <div className="suji-empty-state">No symptoms found.</div>
                         </CTableDataCell>
                       </CTableRow>
                     ) : (
@@ -115,7 +115,7 @@ const Symptoms = () => {
                           <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
                           <CTableDataCell>{s.symptom_name || '-'}</CTableDataCell>
                           <CTableDataCell>
-                            <CBadge color={severityColor[s.severity_level] || 'secondary'}>
+                            <CBadge color={severityColor[s.severity_level] || 'secondary'} shape="rounded-pill">
                               {s.severity_level || '-'}
                             </CBadge>
                           </CTableDataCell>
@@ -128,7 +128,7 @@ const Symptoms = () => {
                 </CTable>
 
                 {totalPages > 1 && (
-                  <CPagination className="justify-content-center">
+                  <CPagination className="justify-content-center mt-3">
                     <CPaginationItem
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage(currentPage - 1)}

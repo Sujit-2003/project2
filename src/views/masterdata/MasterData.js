@@ -14,7 +14,7 @@ import {
   CAlert,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilSave, cilX } from '@coreui/icons'
+import { cilPencil, cilSave, cilX, cilBuilding, cilInfo } from '@coreui/icons'
 import { getMasterData, updateMasterData } from '../../services/masterdataService'
 import { useToast } from '../../components/ToastContext'
 
@@ -27,6 +27,7 @@ const MasterData = () => {
     about: '',
   })
   const [original, setOriginal] = useState(null)
+  const [rawMaster, setRawMaster] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -39,7 +40,6 @@ const MasterData = () => {
       const res = await getMasterData()
       let master = null
       if (res.code === 0 && res.data) {
-        // data could be an array or object
         master = Array.isArray(res.data) ? res.data[0] : res.data
       } else if (Array.isArray(res)) {
         master = res[0]
@@ -48,10 +48,11 @@ const MasterData = () => {
       }
 
       if (master) {
+        setRawMaster(master)
         const formatted = {
-          company_name: master.company_name || '',
-          contact_number: master.contact_number || '',
-          email: master.email || '',
+          company_name: master.company_name || master.companyname || '',
+          contact_number: master.contact_number || master.contactnumber || '',
+          email: master.email || master.emailid || '',
           about: master.about || '',
         }
         setData(formatted)
@@ -100,7 +101,7 @@ const MasterData = () => {
 
   if (loading) {
     return (
-      <div className="text-center py-5">
+      <div className="suji-loading">
         <CSpinner color="primary" />
       </div>
     )
@@ -119,16 +120,20 @@ const MasterData = () => {
   return (
     <CRow className="justify-content-center">
       <CCol lg={8}>
+        {/* Company Profile Card */}
         <CCard className="mb-4">
           <CCardHeader className="d-flex justify-content-between align-items-center">
-            <strong>Master Data</strong>
+            <div className="d-flex align-items-center gap-2">
+              <CIcon icon={cilBuilding} height={18} className="text-primary" />
+              <strong>Company Profile</strong>
+            </div>
             {!editing ? (
               <CButton color="primary" size="sm" onClick={() => setEditing(true)}>
                 <CIcon icon={cilPencil} className="me-1" />
                 Edit
               </CButton>
             ) : (
-              <CButton color="secondary" size="sm" onClick={handleCancel}>
+              <CButton color="secondary" size="sm" variant="outline" onClick={handleCancel}>
                 <CIcon icon={cilX} className="me-1" />
                 Cancel
               </CButton>
@@ -167,17 +172,6 @@ const MasterData = () => {
                   placeholder="Enter email address"
                 />
               </div>
-              <div className="mb-3">
-                <CFormLabel>About</CFormLabel>
-                <CFormTextarea
-                  name="about"
-                  value={data.about}
-                  onChange={handleChange}
-                  rows={5}
-                  disabled={!editing}
-                  placeholder="Enter about section"
-                />
-              </div>
               {editing && (
                 <div className="d-flex gap-2">
                   <CButton color="primary" type="submit" disabled={saving}>
@@ -188,12 +182,46 @@ const MasterData = () => {
                       </>
                     )}
                   </CButton>
-                  <CButton color="secondary" onClick={handleCancel}>
+                  <CButton color="secondary" variant="outline" onClick={handleCancel}>
                     Cancel
                   </CButton>
                 </div>
               )}
             </CForm>
+          </CCardBody>
+        </CCard>
+
+        {/* About Us Section */}
+        <CCard className="mb-4">
+          <CCardHeader>
+            <div className="d-flex align-items-center gap-2">
+              <CIcon icon={cilInfo} height={18} className="text-info" />
+              <strong>About Us</strong>
+            </div>
+          </CCardHeader>
+          <CCardBody>
+            {data.about ? (
+              <div
+                style={{ lineHeight: '1.7', fontSize: '0.9rem', color: 'var(--suji-text-secondary)' }}
+                dangerouslySetInnerHTML={{ __html: data.about }}
+              />
+            ) : (
+              <div className="suji-empty-state">
+                No "About Us" content available. {editing ? 'Add content using the About field above.' : 'Click "Edit" to add content.'}
+              </div>
+            )}
+            {editing && (
+              <div className="mt-3">
+                <CFormLabel>Edit About Content</CFormLabel>
+                <CFormTextarea
+                  name="about"
+                  value={data.about}
+                  onChange={handleChange}
+                  rows={6}
+                  placeholder="Enter about section content"
+                />
+              </div>
+            )}
           </CCardBody>
         </CCard>
       </CCol>

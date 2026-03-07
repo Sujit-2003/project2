@@ -5,12 +5,6 @@ import {
   CCardHeader,
   CCol,
   CRow,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
   CButton,
   CSpinner,
   CAlert,
@@ -19,26 +13,18 @@ import {
   CFormLabel,
   CForm,
   CCollapse,
+  CAccordion,
+  CAccordionItem,
+  CAccordionHeader,
+  CAccordionBody,
   CPagination,
   CPaginationItem,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus, cilPencil, cilChevronBottom, cilChevronTop } from '@coreui/icons'
+import { cilPlus, cilPencil } from '@coreui/icons'
 import { getAllFaqs, createFaq, updateFaq } from '../../services/faqService'
 import { useToast } from '../../components/ToastContext'
 import useTableControls from '../../hooks/useTableControls'
-
-const stripHtml = (html) => {
-  if (!html) return ''
-  const tmp = document.createElement('div')
-  tmp.innerHTML = html
-  return tmp.textContent || tmp.innerText || ''
-}
-
-const truncate = (text, maxLen = 80) => {
-  if (!text) return '-'
-  return text.length > maxLen ? text.substring(0, maxLen) + '...' : text
-}
 
 const FAQs = () => {
   const { showSuccess, showError, showWarning } = useToast()
@@ -48,7 +34,6 @@ const FAQs = () => {
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  const [expandedId, setExpandedId] = useState(null)
   const [form, setForm] = useState({ question: '', response: '' })
 
   const {
@@ -134,10 +119,6 @@ const FAQs = () => {
     }
   }
 
-  const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id)
-  }
-
   return (
     <CRow>
       <CCol xs={12}>
@@ -164,7 +145,7 @@ const FAQs = () => {
           <CCardBody>
             {/* Inline Add/Edit Form */}
             <CCollapse visible={showForm}>
-              <CCard className="mb-3 border-primary">
+              <CCard className="mb-4" style={{ borderLeft: '3px solid var(--suji-primary)' }}>
                 <CCardHeader>
                   <strong>{editingId ? 'Edit FAQ' : 'Add New FAQ'}</strong>
                 </CCardHeader>
@@ -195,7 +176,7 @@ const FAQs = () => {
                       <CButton color="primary" type="submit" disabled={submitting}>
                         {submitting ? <CSpinner size="sm" /> : editingId ? 'Update FAQ' : 'Add FAQ'}
                       </CButton>
-                      <CButton color="secondary" onClick={resetForm}>
+                      <CButton color="secondary" variant="outline" onClick={resetForm}>
                         Cancel
                       </CButton>
                     </div>
@@ -210,87 +191,61 @@ const FAQs = () => {
               placeholder="Search FAQs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="mb-3"
+              className="mb-4"
               style={{ maxWidth: '300px' }}
             />
 
             {loading && (
-              <div className="text-center py-4">
+              <div className="suji-loading">
                 <CSpinner color="primary" />
               </div>
             )}
             {error && <CAlert color="danger">{error}</CAlert>}
+
             {!loading && !error && (
               <>
-                <CTable hover responsive>
-                  <CTableHead>
-                    <CTableRow>
-                      <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
-                      <CTableHeaderCell>Question</CTableHeaderCell>
-                      <CTableHeaderCell>Answer</CTableHeaderCell>
-                      <CTableHeaderCell style={{ width: '120px' }}>Actions</CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    {paginatedData.length === 0 ? (
-                      <CTableRow>
-                        <CTableDataCell colSpan={4} className="text-center text-muted">
-                          No FAQs found.
-                        </CTableDataCell>
-                      </CTableRow>
-                    ) : (
-                      paginatedData.map((faq, index) => {
-                        const faqId = faq.faq_id || faq.id
-                        const isExpanded = expandedId === faqId
-                        return (
-                          <React.Fragment key={faqId || index}>
-                            <CTableRow>
-                              <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
-                              <CTableDataCell>{faq.question || '-'}</CTableDataCell>
-                              <CTableDataCell>
-                                {truncate(stripHtml(faq.response))}
-                                {faq.response && stripHtml(faq.response).length > 80 && (
-                                  <CButton
-                                    color="link"
-                                    size="sm"
-                                    className="p-0 ms-1"
-                                    onClick={() => toggleExpand(faqId)}
-                                  >
-                                    <CIcon icon={isExpanded ? cilChevronTop : cilChevronBottom} />
-                                  </CButton>
-                                )}
-                              </CTableDataCell>
-                              <CTableDataCell>
-                                <CButton
-                                  color="info"
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleEdit(faq)}
-                                  title="Edit"
-                                >
-                                  <CIcon icon={cilPencil} />
-                                </CButton>
-                              </CTableDataCell>
-                            </CTableRow>
-                            {isExpanded && (
-                              <CTableRow>
-                                <CTableDataCell colSpan={4}>
-                                  <div
-                                    className="p-3 bg-light rounded"
-                                    dangerouslySetInnerHTML={{ __html: faq.response }}
-                                  />
-                                </CTableDataCell>
-                              </CTableRow>
-                            )}
-                          </React.Fragment>
-                        )
-                      })
-                    )}
-                  </CTableBody>
-                </CTable>
+                {paginatedData.length === 0 ? (
+                  <div className="suji-empty-state">No FAQs found.</div>
+                ) : (
+                  <CAccordion flush>
+                    {paginatedData.map((faq, index) => {
+                      const faqId = faq.faq_id || faq.id
+                      return (
+                        <CAccordionItem key={faqId || index} itemKey={faqId || index + 1}>
+                          <CAccordionHeader>
+                            <div className="d-flex justify-content-between align-items-center w-100 me-3">
+                              <span>
+                                <span className="text-body-secondary me-2" style={{ fontSize: '0.8rem' }}>
+                                  {(currentPage - 1) * 10 + index + 1}.
+                                </span>
+                                {faq.question || '-'}
+                              </span>
+                            </div>
+                          </CAccordionHeader>
+                          <CAccordionBody>
+                            <div
+                              className="mb-3"
+                              style={{ lineHeight: '1.7' }}
+                              dangerouslySetInnerHTML={{ __html: faq.response || '<em>No answer provided.</em>' }}
+                            />
+                            <CButton
+                              color="info"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(faq)}
+                            >
+                              <CIcon icon={cilPencil} size="sm" className="me-1" />
+                              Edit
+                            </CButton>
+                          </CAccordionBody>
+                        </CAccordionItem>
+                      )
+                    })}
+                  </CAccordion>
+                )}
 
                 {totalPages > 1 && (
-                  <CPagination className="justify-content-center">
+                  <CPagination className="justify-content-center mt-4">
                     <CPaginationItem
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage(currentPage - 1)}

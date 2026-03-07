@@ -129,7 +129,7 @@ const Patients = () => {
             />
 
             {loading && (
-              <div className="text-center py-4">
+              <div className="suji-loading">
                 <CSpinner color="primary" />
               </div>
             )}
@@ -153,8 +153,8 @@ const Patients = () => {
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={isAdmin ? 9 : 8} className="text-center text-muted">
-                          No patients found.
+                        <CTableDataCell colSpan={isAdmin ? 9 : 8} className="text-center">
+                          <div className="suji-empty-state">No patients found.</div>
                         </CTableDataCell>
                       </CTableRow>
                     ) : (
@@ -163,7 +163,7 @@ const Patients = () => {
                         return (
                           <CTableRow key={p.id || index}>
                             <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
-                            <CTableDataCell>
+                            <CTableDataCell className="fw-semibold">
                               {p.patient_fname} {p.patient_lname}
                             </CTableDataCell>
                             {isAdmin && (
@@ -183,7 +183,7 @@ const Patients = () => {
                             <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
                             <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
                             <CTableDataCell>
-                              <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'}>
+                              <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'} shape="rounded-pill">
                                 {p.user_gender}
                               </CBadge>
                             </CTableDataCell>
@@ -210,7 +210,7 @@ const Patients = () => {
                 </CTable>
 
                 {totalPages > 1 && (
-                  <CPagination className="justify-content-center">
+                  <CPagination className="justify-content-center mt-3">
                     <CPaginationItem
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage(currentPage - 1)}
