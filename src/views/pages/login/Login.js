@@ -84,8 +84,7 @@ const Login = () => {
         <CRow className="justify-content-center">
           <CCol md={5} lg={4}>
             <div className="text-center mb-4">
-              <h2 className="fw-bold" style={{ color: '#fff', letterSpacing: '-0.02em' }}>SUJI</h2>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Healthcare Management Platform</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', fontWeight: 500 }}>Healthcare Management Platform</p>
             </div>
             <CCard
               className="border-0"

@@ -19,6 +19,7 @@ import {
   CFormInput,
   CPagination,
   CPaginationItem,
+  CBadge,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilUser } from '@coreui/icons'
@@ -128,6 +129,7 @@ const Doctors = () => {
                       <CTableHeaderCell>Email ID</CTableHeaderCell>
                       <CTableHeaderCell>Register Date</CTableHeaderCell>
                       <CTableHeaderCell>Country</CTableHeaderCell>
+                      <CTableHeaderCell>Status</CTableHeaderCell>
                       <CTableHeaderCell>Activity</CTableHeaderCell>
                       <CTableHeaderCell>Details</CTableHeaderCell>
                     </CTableRow>
@@ -135,7 +137,7 @@ const Doctors = () => {
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={8} className="text-center">
+                        <CTableDataCell colSpan={9} className="text-center">
                           <div className="suji-empty-state">No doctors found.</div>
                         </CTableDataCell>
                       </CTableRow>
@@ -156,6 +158,14 @@ const Doctors = () => {
                             <CTableDataCell>{doctor.cdate || doctor.creationDate || '-'}</CTableDataCell>
                             <CTableDataCell>
                               {country?.name || doctor.countryid || doctor.country || '-'}
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              <CBadge
+                                color={(doctor.ustatus || doctor.status || '').toLowerCase() === 'active' ? 'success' : 'secondary'}
+                                shape="rounded-pill"
+                              >
+                                {doctor.ustatus || doctor.status || 'Inactive'}
+                              </CBadge>
                             </CTableDataCell>
                             <CTableDataCell>{timeAgo(doctor.lastLogin || doctor.last_login)}</CTableDataCell>
                             <CTableDataCell>

@@ -381,12 +381,13 @@ const Dashboard = () => {
                   <CTableHeaderCell>Email ID</CTableHeaderCell>
                   <CTableHeaderCell>Register Date</CTableHeaderCell>
                   <CTableHeaderCell>Country</CTableHeaderCell>
+                  <CTableHeaderCell>Status</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
                 {users.length === 0 ? (
                   <CTableRow>
-                    <CTableDataCell colSpan={6} className="text-center text-muted">No users found.</CTableDataCell>
+                    <CTableDataCell colSpan={7} className="text-center text-muted">No users found.</CTableDataCell>
                   </CTableRow>
                 ) : (
                   users.slice(0, 5).map((user, index) => (
@@ -399,6 +400,14 @@ const Dashboard = () => {
                       <CTableDataCell>{decryptSafe(user.emailid || user.email)}</CTableDataCell>
                       <CTableDataCell>{user.cdate || user.creationDate || '-'}</CTableDataCell>
                       <CTableDataCell>{getCountryName(user)}</CTableDataCell>
+                      <CTableDataCell>
+                        <CBadge
+                          color={(user.ustatus || user.status || '').toLowerCase() === 'active' ? 'success' : 'secondary'}
+                          shape="rounded-pill"
+                        >
+                          {user.ustatus || user.status || 'Inactive'}
+                        </CBadge>
+                      </CTableDataCell>
                     </CTableRow>
                   ))
                 )}
