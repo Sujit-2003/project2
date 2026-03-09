@@ -138,8 +138,8 @@ export const ActivitiesList = ({ patientId, refreshKey = 0, onEdit }) => {
                   <CTableDataCell>{formatDays(activity.days_flag)}</CTableDataCell>
                   <CTableDataCell>{formatTime(activity.actity_datetime)}</CTableDataCell>
                   <CTableDataCell>
-                    <CBadge color={activity.actity_status === 1 ? 'success' : 'secondary'} shape="rounded-pill">
-                      {activity.actity_status === 1 ? 'Active' : 'Inactive'}
+                    <CBadge color={(activity.actity_status_text || '').toLowerCase() === 'active' || activity.actity_status === 1 ? 'success' : 'secondary'} shape="rounded-pill">
+                      {activity.actity_status_text || (activity.actity_status === 1 ? 'Active' : 'Inactive')}
                     </CBadge>
                   </CTableDataCell>
                   <CTableDataCell>
@@ -252,6 +252,7 @@ export const SchedulerForm = ({ patientId, editActivity, onSaved, onCancel }) =>
         actity_datetime: `${form.time}:00`,
         actity_desc: form.description.trim(),
         days_flag: buildDaysFlag(),
+        actity_status: form.status === 'Active' ? 1 : 0,
       }
 
       let res

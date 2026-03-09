@@ -27,17 +27,13 @@ export async function getActivities(patientId) {
   return safeJson(response)
 }
 
-export async function updateActivity(activityId, { actity_name, actity_type, actity_datetime, actity_desc, days_flag }) {
+export async function updateActivity(activityId, { actity_name, actity_type, actity_datetime, actity_desc, days_flag, actity_status }) {
+  const body = { actity_name, actity_type, actity_datetime, actity_desc, days_flag }
+  if (actity_status !== undefined) body.actity_status = actity_status
   const response = await fetch(`${API_URL}/activity/${activityId}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
-    body: JSON.stringify({
-      actity_name,
-      actity_type,
-      actity_datetime,
-      actity_desc,
-      days_flag,
-    }),
+    body: JSON.stringify(body),
   })
   return safeJson(response)
 }
