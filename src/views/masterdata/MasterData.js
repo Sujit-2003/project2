@@ -84,7 +84,12 @@ const MasterData = () => {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await updateMasterData(data)
+      const res = await updateMasterData({
+        companyname: data.company_name,
+        contactnumber: data.contact_number,
+        emailid: data.email,
+        about: data.about,
+      })
       if (Number(res.code) === 0) {
         showSuccess(res.message || 'Master data updated successfully!')
         setOriginal({ ...data })
