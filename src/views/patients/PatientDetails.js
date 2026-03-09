@@ -370,8 +370,8 @@ const PatientDetails = () => {
                       <CTableDataCell>{formatDays(activity.days_flag)}</CTableDataCell>
                       <CTableDataCell>{formatTime(activity.actity_datetime)}</CTableDataCell>
                       <CTableDataCell>
-                        <CBadge color={activity.actity_status === 1 ? 'success' : 'secondary'} shape="rounded-pill">
-                          {activity.actity_status === 1 ? 'Active' : 'Inactive'}
+                        <CBadge color={(activity.actity_status_text || '').toLowerCase() === 'active' || activity.actity_status === 1 ? 'success' : 'secondary'} shape="rounded-pill">
+                          {activity.actity_status_text || (activity.actity_status === 1 ? 'Active' : 'Inactive')}
                         </CBadge>
                       </CTableDataCell>
                       {!isAdmin && (

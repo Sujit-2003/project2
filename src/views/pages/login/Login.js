@@ -77,7 +77,7 @@ const Login = () => {
     <div
       className="min-vh-100 d-flex align-items-center"
       style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #2F7D6B 0%, #3F8F7A 100%)',
       }}
     >
       <CContainer>

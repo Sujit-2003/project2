@@ -99,12 +99,12 @@ function isTaskPast(timeStr) {
 }
 
 const GRADIENTS = {
-  purple: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  green: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-  violet: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
-  pink: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  blue: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  orange: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+  primary: 'linear-gradient(135deg, #2F7D6B 0%, #3F8F7A 100%)',
+  teal: 'linear-gradient(135deg, #3C8C78 0%, #4CA98E 100%)',
+  sage: 'linear-gradient(135deg, #4A9B87 0%, #6BB5A0 100%)',
+  mint: 'linear-gradient(135deg, #5DADA0 0%, #7EC8B8 100%)',
+  ocean: 'linear-gradient(135deg, #2D7A8E 0%, #4A9DAF 100%)',
+  forest: 'linear-gradient(135deg, #245F53 0%, #2F7D6B 100%)',
 }
 
 const GradientStatCard = ({ icon, gradient, label, count }) => (
@@ -287,10 +287,10 @@ const Dashboard = () => {
     const otherCount = allPatients.length - maleCount - femaleCount
 
     const adminStatCards = [
-      { icon: cilPeople, gradient: GRADIENTS.purple, label: 'Parents', count: users.length },
-      { icon: cilChildFriendly, gradient: GRADIENTS.green, label: 'Patients', count: allPatients.length },
-      { icon: cilUserFollow, gradient: GRADIENTS.violet, label: 'Doctors', count: doctors.length },
-      { icon: cilTask, gradient: GRADIENTS.pink, label: 'Activities', count: adminActivityCount },
+      { icon: cilPeople, gradient: GRADIENTS.primary, label: 'Parents', count: users.length },
+      { icon: cilChildFriendly, gradient: GRADIENTS.teal, label: 'Patients', count: allPatients.length },
+      { icon: cilUserFollow, gradient: GRADIENTS.sage, label: 'Doctors', count: doctors.length },
+      { icon: cilTask, gradient: GRADIENTS.ocean, label: 'Activities', count: adminActivityCount },
     ]
 
     return (
@@ -318,7 +318,7 @@ const Dashboard = () => {
                     datasets: [
                       {
                         label: 'Count',
-                        backgroundColor: ['#667eea', '#38ef7d', '#a855f7'],
+                        backgroundColor: ['#2F7D6B', '#4CA98E', '#7EC8B8'],
                         data: [users.length, allPatients.length, doctors.length],
                         borderRadius: 8,
                         barThickness: 48,
@@ -351,8 +351,8 @@ const Dashboard = () => {
                       datasets: [
                         {
                           data: [maleCount, femaleCount, otherCount],
-                          backgroundColor: ['#36A2EB', '#FF6384', '#FFCE56'],
-                          hoverBackgroundColor: ['#2b8ad4', '#e8577a', '#e6b94d'],
+                          backgroundColor: ['#2F7D6B', '#4CA98E', '#A8D8CC'],
+                          hoverBackgroundColor: ['#245F53', '#3F8F7A', '#8ECABC'],
                         },
                       ],
                     }}
@@ -484,10 +484,10 @@ const Dashboard = () => {
     .sort((a, b) => (a.actity_datetime || '').localeCompare(b.actity_datetime || ''))
 
   const parentStatCards = [
-    { icon: cilChildFriendly, gradient: GRADIENTS.blue, label: 'Total Patients', count: patients.length },
-    { icon: cilTask, gradient: GRADIENTS.purple, label: "Today's Tasks", count: todayTasks.length },
-    { icon: cilBell, gradient: GRADIENTS.orange, label: 'Upcoming Reminders', count: reminders.length },
-    { icon: cilCheckCircle, gradient: GRADIENTS.green, label: 'Completed Tasks', count: completedTasks.length },
+    { icon: cilChildFriendly, gradient: GRADIENTS.primary, label: 'Total Patients', count: patients.length },
+    { icon: cilTask, gradient: GRADIENTS.teal, label: "Today's Tasks", count: todayTasks.length },
+    { icon: cilBell, gradient: GRADIENTS.ocean, label: 'Upcoming Reminders', count: reminders.length },
+    { icon: cilCheckCircle, gradient: GRADIENTS.sage, label: 'Completed Tasks', count: completedTasks.length },
   ]
 
   return (
@@ -583,7 +583,7 @@ const Dashboard = () => {
                         width: '12px',
                         height: '12px',
                         border: '2px solid white',
-                        boxShadow: '0 0 0 2px ' + (dueSoon ? '#f9b115' : past ? '#9da5b1' : '#321fdb'),
+                        boxShadow: '0 0 0 2px ' + (dueSoon ? '#d97706' : past ? '#9CA3AF' : '#2F7D6B'),
                       }}
                     />
                     <div
@@ -673,8 +673,8 @@ const Dashboard = () => {
                               .join(', ')}
                       </CTableDataCell>
                       <CTableDataCell>
-                        <CBadge color={task.actity_status === 1 ? 'primary' : 'secondary'} shape="rounded-pill">
-                          {task.actity_status === 1 ? 'Active' : 'Inactive'}
+                        <CBadge color={(task.actity_status_text || '').toLowerCase() === 'active' || task.actity_status === 1 ? 'success' : 'secondary'} shape="rounded-pill">
+                          {task.actity_status_text || (task.actity_status === 1 ? 'Active' : 'Inactive')}
                         </CBadge>
                       </CTableDataCell>
                     </CTableRow>

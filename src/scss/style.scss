@@ -9,10 +9,12 @@
    ============================================= */
 
 :root {
-  /* Primary palette */
-  --suji-primary: #4f46e5;
-  --suji-primary-light: #eef2ff;
-  --suji-primary-dark: #3730a3;
+  /* Primary palette — Medical Green */
+  --suji-primary: #2F7D6B;
+  --suji-primary-light: #EBF5F3;
+  --suji-primary-dark: #245F53;
+  --suji-primary-hover: #3F8F7A;
+  --suji-sidebar-active: #3C8C78;
 
   /* Semantic colors */
   --suji-success: #059669;
@@ -21,15 +23,15 @@
   --suji-info: #0891b2;
 
   /* Surfaces */
-  --suji-bg: #f8fafc;
-  --suji-surface: #ffffff;
-  --suji-border: #e2e8f0;
-  --suji-border-light: #f1f5f9;
+  --suji-bg: #F5F7F8;
+  --suji-surface: #FFFFFF;
+  --suji-border: #E6ECEB;
+  --suji-border-light: #F0F4F3;
 
   /* Text */
-  --suji-text-primary: #0f172a;
-  --suji-text-secondary: #64748b;
-  --suji-text-muted: #94a3b8;
+  --suji-text-primary: #2E2E2E;
+  --suji-text-secondary: #6B7280;
+  --suji-text-muted: #9CA3AF;
 
   /* Spacing scale (4px base) */
   --suji-space-1: 0.25rem;
@@ -41,16 +43,16 @@
   --suji-space-8: 2rem;
 
   /* Radius */
-  --suji-radius-sm: 6px;
-  --suji-radius: 10px;
+  --suji-radius-sm: 8px;
+  --suji-radius: 12px;
   --suji-radius-lg: 14px;
   --suji-radius-xl: 18px;
 
-  /* Shadows */
-  --suji-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --suji-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  --suji-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --suji-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.04);
+  /* Shadows — soft */
+  --suji-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --suji-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --suji-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
+  --suji-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.03);
 
   /* Transitions */
   --suji-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -116,15 +118,22 @@ body {
 
 .header {
   backdrop-filter: blur(8px);
-  background-color: rgba(255, 255, 255, 0.9) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
   border-bottom: 1px solid var(--suji-border) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
-/* ─── Sidebar polish ─── */
+/* ─── Sidebar polish (Medical Green) ─── */
 
 .sidebar {
   border-right: none !important;
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
+  --cui-sidebar-bg: #1A3C34 !important;
+  background: linear-gradient(180deg, #1A3C34 0%, #1E4A40 100%) !important;
+}
+
+.sidebar-header {
+  background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 .sidebar-nav .nav-link {
@@ -134,14 +143,17 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   transition: all var(--suji-transition);
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 .sidebar-nav .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(63, 143, 122, 0.2);
+  color: #fff !important;
 }
 
 .sidebar-nav .nav-link.active {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--suji-sidebar-active) !important;
+  color: #fff !important;
 }
 
 .sidebar-nav .nav-group-toggle::after {
@@ -236,7 +248,7 @@ body {
   &:hover {
     background-color: var(--suji-primary-dark);
     border-color: var(--suji-primary-dark);
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 2px 8px rgba(47, 125, 107, 0.3);
   }
 }
 
@@ -252,7 +264,7 @@ body {
 
   &:focus {
     border-color: var(--suji-primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    box-shadow: 0 0 0 3px rgba(47, 125, 107, 0.1);
   }
 }
 
@@ -517,7 +529,7 @@ body {
     --suji-text-primary: #f1f5f9;
     --suji-text-secondary: #94a3b8;
     --suji-text-muted: #64748b;
-    --suji-primary-light: rgba(79, 70, 229, 0.15);
+    --suji-primary-light: rgba(47, 125, 107, 0.15);
   }
 
   body {
@@ -535,7 +547,7 @@ body {
   }
 
   .table tbody tr:hover {
-    background-color: rgba(79, 70, 229, 0.08) !important;
+    background-color: rgba(47, 125, 107, 0.08) !important;
   }
 
   .footer {
@@ -551,7 +563,7 @@ body {
   }
 
   .accordion-button:not(.collapsed) {
-    background-color: rgba(79, 70, 229, 0.12);
+    background-color: rgba(47, 125, 107, 0.12);
   }
 
   .accordion-item {
