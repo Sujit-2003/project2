@@ -161,7 +161,7 @@ const Doctors = () => {
                             </CTableDataCell>
                             <CTableDataCell>
                               <CBadge
-                                color={(doctor.ustatus || doctor.status || '').toLowerCase() === 'active' ? 'success' : 'secondary'}
+                                color={['active', 'approved'].includes((doctor.ustatus || doctor.status || '').toLowerCase()) ? 'success' : 'secondary'}
                                 shape="rounded-pill"
                               >
                                 {doctor.ustatus || doctor.status || 'Inactive'}

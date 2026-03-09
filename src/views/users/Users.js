@@ -161,7 +161,7 @@ const Users = () => {
                             </CTableDataCell>
                             <CTableDataCell>
                               <CBadge
-                                color={(user.ustatus || user.status || '').toLowerCase() === 'active' ? 'success' : 'secondary'}
+                                color={['active', 'approved'].includes((user.ustatus || user.status || '').toLowerCase()) ? 'success' : 'secondary'}
                                 shape="rounded-pill"
                               >
                                 {user.ustatus || user.status || 'Inactive'}
