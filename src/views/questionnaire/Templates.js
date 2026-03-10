@@ -27,9 +27,9 @@ import { useToast } from '../../components/ToastContext'
 
 const INITIAL_FORM = {
   template_name: '',
-  template_description: '',
-  num_questions: '',
-  keywords: '',
+  template_desc: '',
+  no_of_questions: '',
+  key_words: '',
 }
 
 const Templates = () => {
@@ -71,7 +71,7 @@ const Templates = () => {
       showWarning('Template name is required.')
       return
     }
-    if (!form.num_questions || Number(form.num_questions) < 1) {
+    if (!form.no_of_questions || Number(form.no_of_questions) < 1) {
       showWarning('Number of questions must be at least 1.')
       return
     }
@@ -80,12 +80,12 @@ const Templates = () => {
     try {
       const res = await addTemplate({
         template_name: form.template_name.trim(),
-        template_description: form.template_description.trim(),
-        num_questions: Number(form.num_questions),
-        keywords: form.keywords.trim(),
+        template_desc: form.template_desc.trim(),
+        no_of_questions: Number(form.no_of_questions),
+        key_words: form.key_words.trim(),
       })
       if (Number(res.code) === 0) {
-        showSuccess(res.message || 'Template created successfully!')
+        showSuccess(res.message || 'Template added successfully!')
         setForm({ ...INITIAL_FORM })
         setShowForm(false)
         await loadTemplates()
@@ -108,10 +108,7 @@ const Templates = () => {
             <CIcon icon={cilNotes} height={22} className="text-primary" />
             <h5 className="mb-0 fw-bold">Questionnaire Templates</h5>
           </div>
-          <CButton
-            color="primary"
-            onClick={() => setShowForm(!showForm)}
-          >
+          <CButton color="primary" onClick={() => setShowForm(!showForm)}>
             {showForm ? (
               <>
                 <CIcon icon={cilX} className="me-1" />
@@ -147,12 +144,12 @@ const Templates = () => {
                     />
                   </CCol>
                   <CCol md={3}>
-                    <CFormLabel htmlFor="num_questions">Number of Questions *</CFormLabel>
+                    <CFormLabel htmlFor="no_of_questions">Number of Questions *</CFormLabel>
                     <CFormInput
                       type="number"
-                      id="num_questions"
-                      name="num_questions"
-                      value={form.num_questions}
+                      id="no_of_questions"
+                      name="no_of_questions"
+                      value={form.no_of_questions}
                       onChange={handleChange}
                       placeholder="e.g. 20"
                       min="1"
@@ -160,22 +157,22 @@ const Templates = () => {
                     />
                   </CCol>
                   <CCol md={3}>
-                    <CFormLabel htmlFor="keywords">Keywords</CFormLabel>
+                    <CFormLabel htmlFor="key_words">Keywords</CFormLabel>
                     <CFormInput
-                      id="keywords"
-                      name="keywords"
-                      value={form.keywords}
+                      id="key_words"
+                      name="key_words"
+                      value={form.key_words}
                       onChange={handleChange}
                       placeholder="e.g. mood, anxiety"
                     />
                   </CCol>
                 </CRow>
                 <div className="mb-3">
-                  <CFormLabel htmlFor="template_description">Template Description</CFormLabel>
+                  <CFormLabel htmlFor="template_desc">Template Description</CFormLabel>
                   <CFormTextarea
-                    id="template_description"
-                    name="template_description"
-                    value={form.template_description}
+                    id="template_desc"
+                    name="template_desc"
+                    value={form.template_desc}
                     onChange={handleChange}
                     rows={3}
                     placeholder="Describe the purpose of this template..."
@@ -193,10 +190,7 @@ const Templates = () => {
                   <CButton
                     color="secondary"
                     variant="outline"
-                    onClick={() => {
-                      setForm({ ...INITIAL_FORM })
-                      setShowForm(false)
-                    }}
+                    onClick={() => { setForm({ ...INITIAL_FORM }); setShowForm(false) }}
                   >
                     Cancel
                   </CButton>
@@ -239,21 +233,21 @@ const Templates = () => {
                       <CTableDataCell className="fw-semibold">{t.template_name}</CTableDataCell>
                       <CTableDataCell>
                         <span className="text-body-secondary" style={{ fontSize: '0.85rem' }}>
-                          {t.template_description
-                            ? t.template_description.length > 60
-                              ? t.template_description.slice(0, 60) + '...'
-                              : t.template_description
+                          {t.template_desc
+                            ? t.template_desc.length > 60
+                              ? t.template_desc.slice(0, 60) + '...'
+                              : t.template_desc
                             : '-'}
                         </span>
                       </CTableDataCell>
                       <CTableDataCell>
                         <CBadge color="primary" shape="rounded-pill">
-                          {t.num_questions || 0}
+                          {t.no_of_questions || 0}
                         </CBadge>
                       </CTableDataCell>
                       <CTableDataCell>
-                        {t.keywords ? (
-                          t.keywords.split(',').map((kw, i) => (
+                        {t.key_words ? (
+                          t.key_words.split(',').map((kw, i) => (
                             <CBadge key={i} color="light" textColor="dark" className="me-1" shape="rounded-pill">
                               {kw.trim()}
                             </CBadge>

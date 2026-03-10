@@ -23,13 +23,13 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft, cilPlus, cilNotes, cilPencil, cilSave, cilX } from '@coreui/icons'
-import { getTemplateById, getQuestions, addQuestion, updateQuestion } from '../../services/questionnaireService'
+import { getTemplateById, getQuestions, addQuestion, addQuestionOptions } from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
-const EMPTY_OPTION = { text: '', hint: '', weightage: 0 }
+const EMPTY_OPTION = { opt_text: '', opt_hint: '', opt_weightge: 0 }
 const INITIAL_QUESTION = {
-  question_text: '',
-  question_description: '',
+  question: '',
+  description: '',
   options: [
     { ...EMPTY_OPTION },
     { ...EMPTY_OPTION },
@@ -87,35 +87,43 @@ const TemplateDetails = () => {
 
   const handleOptionChange = (index, field, value) => {
     const updated = [...questionForm.options]
-    updated[index] = { ...updated[index], [field]: field === 'weightage' ? Number(value) : value }
+    updated[index] = { ...updated[index], [field]: field === 'opt_weightge' ? Number(value) : value }
     setQuestionForm({ ...questionForm, options: updated })
   }
 
   const resetForm = () => {
-    setQuestionForm({ ...INITIAL_QUESTION, options: Array(5).fill(null).map(() => ({ ...EMPTY_OPTION })) })
+    setQuestionForm({
+      ...INITIAL_QUESTION,
+      options: Array(5).fill(null).map(() => ({ ...EMPTY_OPTION })),
+    })
     setEditingQuestionId(null)
     setShowQuestionForm(false)
   }
 
-  const handleEditQuestion = (question) => {
+  const handleEditQuestion = (q) => {
+    // Pre-fill question fields (options may not be available from GET)
     setQuestionForm({
-      question_text: question.question_text || '',
-      question_description: question.question_description || '',
-      options: question.options && question.options.length === 5
-        ? question.options.map((o) => ({ text: o.text || '', hint: o.hint || '', weightage: o.weightage || 0 }))
+      question: q.question || '',
+      description: q.description || '',
+      options: q.options && q.options.length === 5
+        ? q.options.map((o) => ({
+            opt_text: o.opt_text || o.text || '',
+            opt_hint: o.opt_hint || o.hint || '',
+            opt_weightge: o.opt_weightge || o.weightage || 0,
+          }))
         : Array(5).fill(null).map(() => ({ ...EMPTY_OPTION })),
     })
-    setEditingQuestionId(question.id)
+    setEditingQuestionId(q.id)
     setShowQuestionForm(true)
   }
 
   const handleSubmitQuestion = async (e) => {
     e.preventDefault()
-    if (!questionForm.question_text.trim()) {
+    if (!questionForm.question.trim()) {
       showWarning('Question text is required.')
       return
     }
-    const hasEmptyOption = questionForm.options.some((o) => !o.text.trim())
+    const hasEmptyOption = questionForm.options.some((o) => !o.opt_text.trim())
     if (hasEmptyOption) {
       showWarning('All 5 option texts are required.')
       return
@@ -123,34 +131,55 @@ const TemplateDetails = () => {
 
     setSubmitting(true)
     try {
-      const payload = {
+      // Step 1: Create/update the question
+      // Note: No PUT endpoint exists, so for edit we create a new question
+      const qRes = await addQuestion({
+        question: questionForm.question.trim(),
+        description: questionForm.description.trim(),
         template_id: Number(id),
-        question_text: questionForm.question_text.trim(),
-        question_description: questionForm.question_description.trim(),
-        options: questionForm.options.map((o) => ({
-          text: o.text.trim(),
-          hint: o.hint.trim(),
-          weightage: Number(o.weightage) || 0,
-        })),
-      }
+      })
 
-      let res
-      if (editingQuestionId) {
-        res = await updateQuestion(editingQuestionId, payload)
-      } else {
-        res = await addQuestion(payload)
-      }
+      if (Number(qRes.code) === 0) {
+        // Step 2: Get the question ID and add options
+        // The q_id may come from the response data, or we reload questions to find it
+        let questionId = qRes.data?.id || qRes.data?.q_id
 
-      if (Number(res.code) === 0) {
-        showSuccess(res.message || (editingQuestionId ? 'Question updated!' : 'Question added!'))
+        if (!questionId) {
+          // Reload questions to find the newly created one
+          const reloadRes = await getQuestions(id)
+          if (Number(reloadRes.code) === 0 && Array.isArray(reloadRes.data)) {
+            const newest = reloadRes.data[reloadRes.data.length - 1]
+            questionId = newest?.id
+          }
+        }
+
+        if (questionId) {
+          const optRes = await addQuestionOptions({
+            q_id: Number(questionId),
+            options: questionForm.options.map((o) => ({
+              opt_text: o.opt_text.trim(),
+              opt_hint: o.opt_hint.trim(),
+              opt_weightge: Number(o.opt_weightge) || 0,
+            })),
+          })
+
+          if (Number(optRes.code) === 0) {
+            showSuccess('Question and options saved successfully!')
+          } else {
+            showSuccess('Question saved but options may have failed: ' + (optRes.message || ''))
+          }
+        } else {
+          showSuccess(qRes.message || 'Question added (options need question ID).')
+        }
+
         resetForm()
-        // Reload questions
-        const qRes = await getQuestions(id)
-        if (Number(qRes.code) === 0 && Array.isArray(qRes.data)) {
-          setQuestions(qRes.data)
+        // Reload questions list
+        const qListRes = await getQuestions(id)
+        if (Number(qListRes.code) === 0 && Array.isArray(qListRes.data)) {
+          setQuestions(qListRes.data)
         }
       } else {
-        showError(res.message || 'Failed to save question.')
+        showError(qRes.message || 'Failed to save question.')
       }
     } catch {
       showError('Network error saving question.')
@@ -193,19 +222,19 @@ const TemplateDetails = () => {
             </div>
             <div className="suji-detail-row">
               <div className="detail-label">Description</div>
-              <div className="detail-value">{template.template_description || '-'}</div>
+              <div className="detail-value">{template.template_desc || '-'}</div>
             </div>
             <div className="suji-detail-row">
               <div className="detail-label">Number of Questions</div>
               <div className="detail-value">
-                <CBadge color="primary" shape="rounded-pill">{template.num_questions || 0}</CBadge>
+                <CBadge color="primary" shape="rounded-pill">{template.no_of_questions || 0}</CBadge>
               </div>
             </div>
             <div className="suji-detail-row">
               <div className="detail-label">Keywords</div>
               <div className="detail-value">
-                {template.keywords ? (
-                  template.keywords.split(',').map((kw, i) => (
+                {template.key_words ? (
+                  template.key_words.split(',').map((kw, i) => (
                     <CBadge key={i} color="light" textColor="dark" className="me-1" shape="rounded-pill">
                       {kw.trim()}
                     </CBadge>
@@ -227,8 +256,8 @@ const TemplateDetails = () => {
                 <div className="mb-3">
                   <CFormLabel>Question Text *</CFormLabel>
                   <CFormInput
-                    name="question_text"
-                    value={questionForm.question_text}
+                    name="question"
+                    value={questionForm.question}
                     onChange={handleQuestionChange}
                     placeholder="e.g. How are you feeling today?"
                     required
@@ -237,8 +266,8 @@ const TemplateDetails = () => {
                 <div className="mb-3">
                   <CFormLabel>Question Description</CFormLabel>
                   <CFormTextarea
-                    name="question_description"
-                    value={questionForm.question_description}
+                    name="description"
+                    value={questionForm.description}
                     onChange={handleQuestionChange}
                     rows={2}
                     placeholder="Describe the purpose of this question..."
@@ -260,8 +289,8 @@ const TemplateDetails = () => {
                         <CCol md={5}>
                           <CFormLabel className="small">Option Text *</CFormLabel>
                           <CFormInput
-                            value={opt.text}
-                            onChange={(e) => handleOptionChange(idx, 'text', e.target.value)}
+                            value={opt.opt_text}
+                            onChange={(e) => handleOptionChange(idx, 'opt_text', e.target.value)}
                             placeholder={`Option ${idx + 1} text`}
                             required
                           />
@@ -269,8 +298,8 @@ const TemplateDetails = () => {
                         <CCol md={4}>
                           <CFormLabel className="small">Option Hint</CFormLabel>
                           <CFormInput
-                            value={opt.hint}
-                            onChange={(e) => handleOptionChange(idx, 'hint', e.target.value)}
+                            value={opt.opt_hint}
+                            onChange={(e) => handleOptionChange(idx, 'opt_hint', e.target.value)}
                             placeholder="Hint for this option"
                           />
                         </CCol>
@@ -278,8 +307,8 @@ const TemplateDetails = () => {
                           <CFormLabel className="small">Weightage</CFormLabel>
                           <CFormInput
                             type="number"
-                            value={opt.weightage}
-                            onChange={(e) => handleOptionChange(idx, 'weightage', e.target.value)}
+                            value={opt.opt_weightge}
+                            onChange={(e) => handleOptionChange(idx, 'opt_weightge', e.target.value)}
                             placeholder="0"
                             min="0"
                           />
@@ -294,7 +323,7 @@ const TemplateDetails = () => {
                     {submitting ? <CSpinner size="sm" /> : (
                       <>
                         <CIcon icon={cilSave} className="me-1" />
-                        {editingQuestionId ? 'Update Question' : 'Save Question'}
+                        Save Question
                       </>
                     )}
                   </CButton>
@@ -315,10 +344,7 @@ const TemplateDetails = () => {
               <CButton
                 color="primary"
                 size="sm"
-                onClick={() => {
-                  resetForm()
-                  setShowQuestionForm(true)
-                }}
+                onClick={() => { resetForm(); setShowQuestionForm(true) }}
               >
                 <CIcon icon={cilPlus} className="me-1" />
                 Add Question
@@ -345,19 +371,19 @@ const TemplateDetails = () => {
                   {questions.map((q, idx) => (
                     <CTableRow key={q.id || idx}>
                       <CTableDataCell>{idx + 1}</CTableDataCell>
-                      <CTableDataCell className="fw-semibold">{q.question_text}</CTableDataCell>
+                      <CTableDataCell className="fw-semibold">{q.question}</CTableDataCell>
                       <CTableDataCell>
                         <span className="text-body-secondary" style={{ fontSize: '0.85rem' }}>
-                          {q.question_description
-                            ? q.question_description.length > 50
-                              ? q.question_description.slice(0, 50) + '...'
-                              : q.question_description
+                          {q.description
+                            ? q.description.length > 50
+                              ? q.description.slice(0, 50) + '...'
+                              : q.description
                             : '-'}
                         </span>
                       </CTableDataCell>
                       <CTableDataCell>
                         <CBadge color="primary" shape="rounded-pill">
-                          {q.options ? q.options.length : 0}
+                          {q.options ? q.options.length : 5}
                         </CBadge>
                       </CTableDataCell>
                       <CTableDataCell>
