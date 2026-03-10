@@ -23,10 +23,18 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilArrowLeft, cilPlus, cilNotes, cilPencil, cilSave, cilX } from '@coreui/icons'
-import { getTemplateById, getQuestions, addQuestion, addQuestionOptions } from '../../services/questionnaireService'
+import {
+  getTemplateById,
+  getQuestions,
+  addQuestion,
+  addQuestionOptions,
+  getQuestionOptions,
+  updateQuestion,
+  updateQuestionOption,
+} from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
-const EMPTY_OPTION = { opt_text: '', opt_hint: '', opt_weightge: 0 }
+const EMPTY_OPTION = { id: null, opt_text: '', opt_hint: '', opt_weightge: 0 }
 const INITIAL_QUESTION = {
   question: '',
   description: '',
@@ -53,6 +61,7 @@ const TemplateDetails = () => {
   const [questionForm, setQuestionForm] = useState({ ...INITIAL_QUESTION })
   const [editingQuestionId, setEditingQuestionId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [optionsLoading, setOptionsLoading] = useState(false)
 
   const loadData = async () => {
     setLoading(true)
@@ -100,21 +109,52 @@ const TemplateDetails = () => {
     setShowQuestionForm(false)
   }
 
-  const handleEditQuestion = (q) => {
-    // Pre-fill question fields (options may not be available from GET)
-    setQuestionForm({
-      question: q.question || '',
-      description: q.description || '',
-      options: q.options && q.options.length === 5
-        ? q.options.map((o) => ({
-            opt_text: o.opt_text || o.text || '',
-            opt_hint: o.opt_hint || o.hint || '',
-            opt_weightge: o.opt_weightge || o.weightage || 0,
-          }))
-        : Array(5).fill(null).map(() => ({ ...EMPTY_OPTION })),
-    })
+  const handleEditQuestion = async (q) => {
+    // Start edit mode with basic question fields
     setEditingQuestionId(q.id)
     setShowQuestionForm(true)
+    setQuestionForm((prev) => ({
+      ...prev,
+      question: q.question || '',
+      description: q.description || '',
+      options: Array(5)
+        .fill(null)
+        .map(() => ({ ...EMPTY_OPTION })),
+    }))
+
+    // Then load existing options from backend
+    setOptionsLoading(true)
+    try {
+      const res = await getQuestionOptions(q.id)
+      if (Number(res.code) === 0 && Array.isArray(res.data) && res.data.length > 0) {
+        const filled = res.data.map((o) => ({
+          id: o.id || o.option_id || null,
+          opt_text: o.opt_text || o.text || '',
+          opt_hint: o.opt_hint || o.hint || '',
+          opt_weightge: o.opt_weightge || o.weightage || 0,
+        }))
+
+        // Ensure we always have exactly 5 options in the form
+        const padded = [...filled]
+        while (padded.length < 5) {
+          padded.push({ ...EMPTY_OPTION })
+        }
+        if (padded.length > 5) {
+          padded.length = 5
+        }
+
+        setQuestionForm((prev) => ({
+          ...prev,
+          question: q.question || '',
+          description: q.description || '',
+          options: padded,
+        }))
+      }
+    } catch {
+      // If options fail to load, keep the question text but leave options empty
+    } finally {
+      setOptionsLoading(false)
+    }
   }
 
   const handleSubmitQuestion = async (e) => {
@@ -131,55 +171,103 @@ const TemplateDetails = () => {
 
     setSubmitting(true)
     try {
-      // Step 1: Create/update the question
-      // Note: No PUT endpoint exists, so for edit we create a new question
-      const qRes = await addQuestion({
+      const payload = {
         question: questionForm.question.trim(),
         description: questionForm.description.trim(),
         template_id: Number(id),
-      })
+      }
 
-      if (Number(qRes.code) === 0) {
-        // Step 2: Get the question ID and add options
-        // The q_id may come from the response data, or we reload questions to find it
-        let questionId = qRes.data?.id || qRes.data?.q_id
+      // If editing, use PUT endpoints
+      if (editingQuestionId) {
+        const qRes = await updateQuestion({
+          question_id: editingQuestionId,
+          ...payload,
+        })
 
-        if (!questionId) {
-          // Reload questions to find the newly created one
-          const reloadRes = await getQuestions(id)
-          if (Number(reloadRes.code) === 0 && Array.isArray(reloadRes.data)) {
-            const newest = reloadRes.data[reloadRes.data.length - 1]
-            questionId = newest?.id
-          }
-        }
+        if (Number(qRes.code) === 0) {
+          // Decide between updating existing options vs creating new ones
+          const hasExistingIds = questionForm.options.every((o) => o.id)
 
-        if (questionId) {
-          const optRes = await addQuestionOptions({
-            q_id: Number(questionId),
-            options: questionForm.options.map((o) => ({
-              opt_text: o.opt_text.trim(),
-              opt_hint: o.opt_hint.trim(),
-              opt_weightge: Number(o.opt_weightge) || 0,
-            })),
-          })
-
-          if (Number(optRes.code) === 0) {
-            showSuccess('Question and options saved successfully!')
+          if (hasExistingIds) {
+            // Update each existing option
+            const updatePromises = questionForm.options.map((o) =>
+              updateQuestionOption({
+                option_id: o.id,
+                opt_text: o.opt_text.trim(),
+                opt_hint: o.opt_hint.trim(),
+                opt_weightge: Number(o.opt_weightge) || 0,
+              }),
+            )
+            await Promise.all(updatePromises)
+            showSuccess('Question and options updated successfully!')
           } else {
-            showSuccess('Question saved but options may have failed: ' + (optRes.message || ''))
+            // Fallback: create options if backend doesn't provide IDs
+            const optRes = await addQuestionOptions({
+              q_id: Number(editingQuestionId),
+              options: questionForm.options.map((o) => ({
+                opt_text: o.opt_text.trim(),
+                opt_hint: o.opt_hint.trim(),
+                opt_weightge: Number(o.opt_weightge) || 0,
+              })),
+            })
+
+            if (Number(optRes.code) === 0) {
+              showSuccess('Question updated and options saved successfully!')
+            } else {
+              showSuccess('Question updated but options may have failed: ' + (optRes.message || ''))
+            }
+          }
+
+          resetForm()
+          const qListRes = await getQuestions(id)
+          if (Number(qListRes.code) === 0 && Array.isArray(qListRes.data)) {
+            setQuestions(qListRes.data)
           }
         } else {
-          showSuccess(qRes.message || 'Question added (options need question ID).')
-        }
-
-        resetForm()
-        // Reload questions list
-        const qListRes = await getQuestions(id)
-        if (Number(qListRes.code) === 0 && Array.isArray(qListRes.data)) {
-          setQuestions(qListRes.data)
+          showError(qRes.message || 'Failed to update question.')
         }
       } else {
-        showError(qRes.message || 'Failed to save question.')
+        // Create new question and options
+        const qRes = await addQuestion(payload)
+
+        if (Number(qRes.code) === 0) {
+          let questionId = qRes.data?.id || qRes.data?.q_id
+
+          if (!questionId) {
+            const reloadRes = await getQuestions(id)
+            if (Number(reloadRes.code) === 0 && Array.isArray(reloadRes.data)) {
+              const newest = reloadRes.data[reloadRes.data.length - 1]
+              questionId = newest?.id
+            }
+          }
+
+          if (questionId) {
+            const optRes = await addQuestionOptions({
+              q_id: Number(questionId),
+              options: questionForm.options.map((o) => ({
+                opt_text: o.opt_text.trim(),
+                opt_hint: o.opt_hint.trim(),
+                opt_weightge: Number(o.opt_weightge) || 0,
+              })),
+            })
+
+            if (Number(optRes.code) === 0) {
+              showSuccess('Question and options saved successfully!')
+            } else {
+              showSuccess('Question saved but options may have failed: ' + (optRes.message || ''))
+            }
+          } else {
+            showSuccess(qRes.message || 'Question added (options need question ID).')
+          }
+
+          resetForm()
+          const qListRes = await getQuestions(id)
+          if (Number(qListRes.code) === 0 && Array.isArray(qListRes.data)) {
+            setQuestions(qListRes.data)
+          }
+        } else {
+          showError(qRes.message || 'Failed to save question.')
+        }
       }
     } catch {
       showError('Network error saving question.')
