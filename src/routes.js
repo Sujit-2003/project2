@@ -17,6 +17,8 @@ const FAQs = React.lazy(() => import('./views/faqs/FAQs'))
 const MasterData = React.lazy(() => import('./views/masterdata/MasterData'))
 const ChangePassword = React.lazy(() => import('./views/pages/ChangePassword'))
 const Charts = React.lazy(() => import('./views/charts/Charts'))
+const Templates = React.lazy(() => import('./views/questionnaire/Templates'))
+const TemplateDetails = React.lazy(() => import('./views/questionnaire/TemplateDetails'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
@@ -31,6 +33,8 @@ const routes = [
   { path: '/doctors', name: 'Doctors', element: Doctors, adminOnly: true },
   { path: '/symptoms/add', name: 'Add Symptom', element: AddSymptom, adminOnly: true },
   { path: '/symptoms', name: 'Symptoms', element: Symptoms, adminOnly: true },
+  { path: '/questionnaire/:id', name: 'Template Details', element: TemplateDetails, adminOnly: true },
+  { path: '/questionnaire', name: 'Questionnaire', element: Templates, adminOnly: true },
   { path: '/faqs', name: 'FAQs', element: FAQs, adminOnly: true },
   { path: '/masterdata', name: 'Master Data', element: MasterData, adminOnly: true },
   { path: '/charts', name: 'Charts', element: Charts, adminOnly: true },

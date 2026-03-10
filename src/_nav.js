@@ -10,6 +10,7 @@ import {
   cilNotes,
   cilCommentSquare,
   cilSettings,
+  cilClipboard,
 } from '@coreui/icons'
 import { CNavItem, CNavTitle } from '@coreui/react'
 
@@ -47,6 +48,12 @@ const adminNav = [
     name: 'Symptoms',
     to: '/symptoms',
     icon: <CIcon icon={cilMedicalCross} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Questionnaire',
+    to: '/questionnaire',
+    icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
   },
   {
     component: CNavItem,

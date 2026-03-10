@@ -24,30 +24,10 @@ import {
   cilBan,
   cilDollar,
   cilLockLocked,
+  cilSettings,
 } from '@coreui/icons'
 import { getMasterData, updateMasterData } from '../../services/masterdataService'
 import { useToast } from '../../components/ToastContext'
-
-const ContentCard = ({ icon, iconColor, title, content, emptyMessage }) => (
-  <CCard className="mb-4">
-    <CCardHeader>
-      <div className="d-flex align-items-center gap-2">
-        <CIcon icon={icon} height={18} className={iconColor} />
-        <strong>{title}</strong>
-      </div>
-    </CCardHeader>
-    <CCardBody>
-      {content ? (
-        <div
-          style={{ lineHeight: '1.7', fontSize: '0.9rem', color: 'var(--suji-text-secondary)', whiteSpace: 'pre-line' }}
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
-      ) : (
-        <div className="suji-empty-state">{emptyMessage || `No ${title.toLowerCase()} content available.`}</div>
-      )}
-    </CCardBody>
-  </CCard>
-)
 
 const MasterData = () => {
   const { showSuccess, showError } = useToast()
@@ -56,8 +36,6 @@ const MasterData = () => {
     contact_number: '',
     email: '',
     about: '',
-  })
-  const [extraData, setExtraData] = useState({
     terms: '',
     cancellation: '',
     reimbursement: '',
@@ -89,15 +67,13 @@ const MasterData = () => {
           contact_number: master.contact_number || master.contactnumber || '',
           email: master.email || master.emailid || '',
           about: master.about || '',
-        }
-        setData(formatted)
-        setOriginal(formatted)
-        setExtraData({
           terms: master.terms || '',
           cancellation: master.cancellation || '',
           reimbursement: master.reimbursment || master.reimbursement || '',
           privacy: master.privacy || '',
-        })
+        }
+        setData(formatted)
+        setOriginal(formatted)
       }
     } catch (err) {
       setError(err?.message || 'Failed to load master data.')
@@ -115,9 +91,7 @@ const MasterData = () => {
   }
 
   const handleCancel = () => {
-    if (original) {
-      setData({ ...original })
-    }
+    if (original) setData({ ...original })
     setEditing(false)
   }
 
@@ -130,9 +104,13 @@ const MasterData = () => {
         contactnumber: data.contact_number,
         emailid: data.email,
         about: data.about,
+        terms: data.terms,
+        cancellation: data.cancellation,
+        reimbursment: data.reimbursement,
+        privacy: data.privacy,
       })
       if (Number(res.code) === 0) {
-        showSuccess(res.message || 'Master data updated successfully!')
+        showSuccess('Master Data Updated Successfully')
         setOriginal({ ...data })
         setEditing(false)
       } else {
@@ -163,30 +141,56 @@ const MasterData = () => {
     )
   }
 
+  const sections = [
+    { key: 'about', label: 'About Us', icon: cilInfo, iconColor: 'text-info', rows: 5 },
+    { key: 'terms', label: 'Terms & Conditions', icon: cilFile, iconColor: 'text-primary', rows: 6 },
+    { key: 'cancellation', label: 'Cancellation Policy', icon: cilBan, iconColor: 'text-warning', rows: 5 },
+    { key: 'reimbursement', label: 'Reimbursement Policy', icon: cilDollar, iconColor: 'text-success', rows: 6 },
+    { key: 'privacy', label: 'Privacy Policy', icon: cilLockLocked, iconColor: 'text-danger', rows: 6 },
+  ]
+
   return (
     <CRow className="justify-content-center">
       <CCol lg={8}>
+        {/* Page Header with Single Edit Button */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex align-items-center gap-2">
+            <CIcon icon={cilSettings} height={22} className="text-primary" />
+            <h5 className="mb-0 fw-bold">Master Data</h5>
+          </div>
+          {!editing ? (
+            <CButton color="primary" onClick={() => setEditing(true)}>
+              <CIcon icon={cilPencil} className="me-1" />
+              Edit All
+            </CButton>
+          ) : (
+            <div className="d-flex gap-2">
+              <CButton color="primary" onClick={handleSave} disabled={saving}>
+                {saving ? <CSpinner size="sm" /> : (
+                  <>
+                    <CIcon icon={cilSave} className="me-1" />
+                    Save
+                  </>
+                )}
+              </CButton>
+              <CButton color="secondary" variant="outline" onClick={handleCancel}>
+                <CIcon icon={cilX} className="me-1" />
+                Cancel
+              </CButton>
+            </div>
+          )}
+        </div>
+
         {/* Company Profile Card */}
         <CCard className="mb-4">
-          <CCardHeader className="d-flex justify-content-between align-items-center">
+          <CCardHeader>
             <div className="d-flex align-items-center gap-2">
               <CIcon icon={cilBuilding} height={18} className="text-primary" />
               <strong>Company Profile</strong>
             </div>
-            {!editing ? (
-              <CButton color="primary" size="sm" onClick={() => setEditing(true)}>
-                <CIcon icon={cilPencil} className="me-1" />
-                Edit
-              </CButton>
-            ) : (
-              <CButton color="secondary" size="sm" variant="outline" onClick={handleCancel}>
-                <CIcon icon={cilX} className="me-1" />
-                Cancel
-              </CButton>
-            )}
           </CCardHeader>
           <CCardBody>
-            <CForm onSubmit={handleSave}>
+            <CForm>
               <div className="mb-3">
                 <CFormLabel>Company Name</CFormLabel>
                 <CFormInput
@@ -218,65 +222,57 @@ const MasterData = () => {
                   placeholder="Enter email address"
                 />
               </div>
-              {editing && (
-                <div className="d-flex gap-2">
-                  <CButton color="primary" type="submit" disabled={saving}>
-                    {saving ? <CSpinner size="sm" /> : (
-                      <>
-                        <CIcon icon={cilSave} className="me-1" />
-                        Save
-                      </>
-                    )}
-                  </CButton>
-                  <CButton color="secondary" variant="outline" onClick={handleCancel}>
-                    Cancel
-                  </CButton>
-                </div>
-              )}
             </CForm>
           </CCardBody>
         </CCard>
 
-        {/* About Us */}
-        <ContentCard
-          icon={cilInfo}
-          iconColor="text-info"
-          title="About Us"
-          content={data.about}
-          emptyMessage='No "About Us" content available.'
-        />
+        {/* Content Sections */}
+        {sections.map(({ key, label, icon, iconColor, rows }) => (
+          <CCard key={key} className="mb-4">
+            <CCardHeader>
+              <div className="d-flex align-items-center gap-2">
+                <CIcon icon={icon} height={18} className={iconColor} />
+                <strong>{label}</strong>
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              {editing ? (
+                <CFormTextarea
+                  name={key}
+                  value={data[key]}
+                  onChange={handleChange}
+                  rows={rows}
+                  placeholder={`Enter ${label.toLowerCase()} content...`}
+                />
+              ) : data[key] ? (
+                <div
+                  style={{ lineHeight: '1.7', fontSize: '0.9rem', color: 'var(--suji-text-secondary)', whiteSpace: 'pre-line' }}
+                  dangerouslySetInnerHTML={{ __html: data[key] }}
+                />
+              ) : (
+                <div className="suji-empty-state">No {label.toLowerCase()} content available.</div>
+              )}
+            </CCardBody>
+          </CCard>
+        ))}
 
-        {/* Terms & Conditions */}
-        <ContentCard
-          icon={cilFile}
-          iconColor="text-primary"
-          title="Terms & Conditions"
-          content={extraData.terms}
-        />
-
-        {/* Cancellation Policy */}
-        <ContentCard
-          icon={cilBan}
-          iconColor="text-warning"
-          title="Cancellation Policy"
-          content={extraData.cancellation}
-        />
-
-        {/* Reimbursement Policy */}
-        <ContentCard
-          icon={cilDollar}
-          iconColor="text-success"
-          title="Reimbursement Policy"
-          content={extraData.reimbursement}
-        />
-
-        {/* Privacy Policy */}
-        <ContentCard
-          icon={cilLockLocked}
-          iconColor="text-danger"
-          title="Privacy Policy"
-          content={extraData.privacy}
-        />
+        {/* Bottom Save/Cancel for long pages */}
+        {editing && (
+          <div className="d-flex justify-content-end gap-2 mb-4">
+            <CButton color="primary" onClick={handleSave} disabled={saving}>
+              {saving ? <CSpinner size="sm" /> : (
+                <>
+                  <CIcon icon={cilSave} className="me-1" />
+                  Save
+                </>
+              )}
+            </CButton>
+            <CButton color="secondary" variant="outline" onClick={handleCancel}>
+              <CIcon icon={cilX} className="me-1" />
+              Cancel
+            </CButton>
+          </div>
+        )}
       </CCol>
     </CRow>
   )
