@@ -265,6 +265,14 @@ const Dashboard = () => {
       )
       if (countryObj) return countryObj.country_name
     }
+    // Fallback: match country from phone number ISD code
+    const phone = user.cnumber || user.contactNumber || ''
+    if (phone && phone.startsWith('+')) {
+      // Sort by longest ISD code first for accurate matching
+      const sorted = [...countries].sort((a, b) => (b.isd_code || '').length - (a.isd_code || '').length)
+      const match = sorted.find((c) => c.isd_code && phone.startsWith(c.isd_code))
+      if (match) return match.country_name
+    }
     return user.country || '-'
   }
 

@@ -18,6 +18,7 @@ import { cilLockLocked, cilUser } from '@coreui/icons'
 import { adminLogin, storeSession } from '../../../services/authService'
 import { encrypt, encryptEmail } from '../../../services/encryptionService'
 import { useToast } from '../../../components/ToastContext'
+import chattoCalm from '../../../assets/brand/chattocalm-logo.png'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -84,6 +85,7 @@ const Login = () => {
         <CRow className="justify-content-center">
           <CCol md={5} lg={4}>
             <div className="text-center mb-4">
+              <img src={chattoCalm} alt="ChatToCalm" height={80} style={{ objectFit: 'contain', marginBottom: '0.5rem' }} />
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', fontWeight: 500 }}>Healthcare Management Platform</p>
             </div>
             <CCard

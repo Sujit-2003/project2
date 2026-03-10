@@ -8,7 +8,7 @@ const AppFooter = () => {
         <span className="text-body-secondary">&copy; {new Date().getFullYear()}</span>
       </div>
       <div className="ms-auto">
-        <span className="text-body-secondary">Healthcare Management Platform</span>
+        <span className="text-body-secondary">ChatToCalm - Healthcare Management Platform</span>
       </div>
     </CFooter>
   )

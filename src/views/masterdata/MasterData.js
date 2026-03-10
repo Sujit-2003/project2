@@ -14,9 +14,40 @@ import {
   CAlert,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPencil, cilSave, cilX, cilBuilding, cilInfo } from '@coreui/icons'
+import {
+  cilPencil,
+  cilSave,
+  cilX,
+  cilBuilding,
+  cilInfo,
+  cilFile,
+  cilBan,
+  cilDollar,
+  cilLockLocked,
+} from '@coreui/icons'
 import { getMasterData, updateMasterData } from '../../services/masterdataService'
 import { useToast } from '../../components/ToastContext'
+
+const ContentCard = ({ icon, iconColor, title, content, emptyMessage }) => (
+  <CCard className="mb-4">
+    <CCardHeader>
+      <div className="d-flex align-items-center gap-2">
+        <CIcon icon={icon} height={18} className={iconColor} />
+        <strong>{title}</strong>
+      </div>
+    </CCardHeader>
+    <CCardBody>
+      {content ? (
+        <div
+          style={{ lineHeight: '1.7', fontSize: '0.9rem', color: 'var(--suji-text-secondary)', whiteSpace: 'pre-line' }}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      ) : (
+        <div className="suji-empty-state">{emptyMessage || `No ${title.toLowerCase()} content available.`}</div>
+      )}
+    </CCardBody>
+  </CCard>
+)
 
 const MasterData = () => {
   const { showSuccess, showError } = useToast()
@@ -26,8 +57,13 @@ const MasterData = () => {
     email: '',
     about: '',
   })
+  const [extraData, setExtraData] = useState({
+    terms: '',
+    cancellation: '',
+    reimbursement: '',
+    privacy: '',
+  })
   const [original, setOriginal] = useState(null)
-  const [rawMaster, setRawMaster] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -48,7 +84,6 @@ const MasterData = () => {
       }
 
       if (master) {
-        setRawMaster(master)
         const formatted = {
           company_name: master.company_name || master.companyname || '',
           contact_number: master.contact_number || master.contactnumber || '',
@@ -57,6 +92,12 @@ const MasterData = () => {
         }
         setData(formatted)
         setOriginal(formatted)
+        setExtraData({
+          terms: master.terms || '',
+          cancellation: master.cancellation || '',
+          reimbursement: master.reimbursment || master.reimbursement || '',
+          privacy: master.privacy || '',
+        })
       }
     } catch (err) {
       setError(err?.message || 'Failed to load master data.')
@@ -196,39 +237,46 @@ const MasterData = () => {
           </CCardBody>
         </CCard>
 
-        {/* About Us Section */}
-        <CCard className="mb-4">
-          <CCardHeader>
-            <div className="d-flex align-items-center gap-2">
-              <CIcon icon={cilInfo} height={18} className="text-info" />
-              <strong>About Us</strong>
-            </div>
-          </CCardHeader>
-          <CCardBody>
-            {data.about ? (
-              <div
-                style={{ lineHeight: '1.7', fontSize: '0.9rem', color: 'var(--suji-text-secondary)' }}
-                dangerouslySetInnerHTML={{ __html: data.about }}
-              />
-            ) : (
-              <div className="suji-empty-state">
-                No "About Us" content available. {editing ? 'Add content using the About field above.' : 'Click "Edit" to add content.'}
-              </div>
-            )}
-            {editing && (
-              <div className="mt-3">
-                <CFormLabel>Edit About Content</CFormLabel>
-                <CFormTextarea
-                  name="about"
-                  value={data.about}
-                  onChange={handleChange}
-                  rows={6}
-                  placeholder="Enter about section content"
-                />
-              </div>
-            )}
-          </CCardBody>
-        </CCard>
+        {/* About Us */}
+        <ContentCard
+          icon={cilInfo}
+          iconColor="text-info"
+          title="About Us"
+          content={data.about}
+          emptyMessage='No "About Us" content available.'
+        />
+
+        {/* Terms & Conditions */}
+        <ContentCard
+          icon={cilFile}
+          iconColor="text-primary"
+          title="Terms & Conditions"
+          content={extraData.terms}
+        />
+
+        {/* Cancellation Policy */}
+        <ContentCard
+          icon={cilBan}
+          iconColor="text-warning"
+          title="Cancellation Policy"
+          content={extraData.cancellation}
+        />
+
+        {/* Reimbursement Policy */}
+        <ContentCard
+          icon={cilDollar}
+          iconColor="text-success"
+          title="Reimbursement Policy"
+          content={extraData.reimbursement}
+        />
+
+        {/* Privacy Policy */}
+        <ContentCard
+          icon={cilLockLocked}
+          iconColor="text-danger"
+          title="Privacy Policy"
+          content={extraData.privacy}
+        />
       </CCol>
     </CRow>
   )
