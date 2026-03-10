@@ -255,8 +255,6 @@ const MasterData = () => {
             </CCardBody>
           </CCard>
         ))}
-
-
       </CCol>
     </CRow>
   )

@@ -21,8 +21,8 @@ import {
   CFormLabel,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus, cilNotes, cilX, cilSave, cilPencil } from '@coreui/icons'
-import { getTemplates, addTemplate } from '../../services/questionnaireService'
+import { cilPlus, cilNotes, cilX, cilSave, cilPencil, cilClipboard } from '@coreui/icons'
+import { getTemplates, addTemplate, updateTemplate } from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
 const INITIAL_FORM = {
@@ -40,6 +40,7 @@ const Templates = () => {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...INITIAL_FORM })
   const [submitting, setSubmitting] = useState(false)
+  const [editingTemplateId, setEditingTemplateId] = useState(null)
 
   const loadTemplates = async () => {
     setLoading(true)
@@ -65,6 +66,24 @@ const Templates = () => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  const resetForm = () => {
+    setForm({ ...INITIAL_FORM })
+    setEditingTemplateId(null)
+    setShowForm(false)
+  }
+
+  const handleEditTemplate = (t) => {
+    setEditingTemplateId(t.id)
+    setForm({
+      template_name: t.template_name || '',
+      template_desc: t.template_desc || '',
+      no_of_questions: t.no_of_questions || '',
+      key_words: t.key_words || '',
+    })
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.template_name.trim()) {
@@ -78,22 +97,29 @@ const Templates = () => {
 
     setSubmitting(true)
     try {
-      const res = await addTemplate({
+      const payload = {
         template_name: form.template_name.trim(),
         template_desc: form.template_desc.trim(),
         no_of_questions: Number(form.no_of_questions),
         key_words: form.key_words.trim(),
-      })
+      }
+
+      let res
+      if (editingTemplateId) {
+        res = await updateTemplate({ template_id: editingTemplateId, ...payload })
+      } else {
+        res = await addTemplate(payload)
+      }
+
       if (Number(res.code) === 0) {
-        showSuccess(res.message || 'Template added successfully!')
-        setForm({ ...INITIAL_FORM })
-        setShowForm(false)
+        showSuccess(res.message || (editingTemplateId ? 'Template updated successfully!' : 'Template added successfully!'))
+        resetForm()
         await loadTemplates()
       } else {
-        showError(res.message || 'Failed to create template.')
+        showError(res.message || (editingTemplateId ? 'Failed to update template.' : 'Failed to create template.'))
       }
     } catch {
-      showError('Network error creating template.')
+      showError('Network error. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -105,29 +131,28 @@ const Templates = () => {
         {/* Page Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div className="d-flex align-items-center gap-2">
-            <CIcon icon={cilNotes} height={22} className="text-primary" />
-            <h5 className="mb-0 fw-bold">Questionnaire Templates</h5>
+            <CIcon icon={cilClipboard} height={24} className="text-primary" />
+            <h4 className="mb-0 fw-bold">Questionnaire Templates</h4>
           </div>
-          <CButton color="primary" onClick={() => setShowForm(!showForm)}>
-            {showForm ? (
-              <>
-                <CIcon icon={cilX} className="me-1" />
-                Close Form
-              </>
-            ) : (
-              <>
-                <CIcon icon={cilPlus} className="me-1" />
-                Add Template
-              </>
-            )}
-          </CButton>
+          {!showForm && (
+            <CButton color="primary" onClick={() => { resetForm(); setShowForm(true) }}>
+              <CIcon icon={cilPlus} className="me-1" />
+              Add Template
+            </CButton>
+          )}
         </div>
 
-        {/* Add Template Form */}
+        {/* Add / Edit Template Form */}
         {showForm && (
-          <CCard className="mb-4">
-            <CCardHeader>
-              <strong>New Template</strong>
+          <CCard className="mb-4 border-primary">
+            <CCardHeader className="d-flex justify-content-between align-items-center bg-light">
+              <div className="d-flex align-items-center gap-2">
+                <CIcon icon={editingTemplateId ? cilPencil : cilPlus} height={16} className="text-primary" />
+                <strong>{editingTemplateId ? 'Edit Template' : 'New Template'}</strong>
+              </div>
+              <CButton color="light" size="sm" onClick={resetForm}>
+                <CIcon icon={cilX} size="sm" />
+              </CButton>
             </CCardHeader>
             <CCardBody>
               <CForm onSubmit={handleSubmit}>
@@ -144,7 +169,7 @@ const Templates = () => {
                     />
                   </CCol>
                   <CCol md={3}>
-                    <CFormLabel htmlFor="no_of_questions">Number of Questions *</CFormLabel>
+                    <CFormLabel htmlFor="no_of_questions">No. of Questions *</CFormLabel>
                     <CFormInput
                       type="number"
                       id="no_of_questions"
@@ -168,7 +193,7 @@ const Templates = () => {
                   </CCol>
                 </CRow>
                 <div className="mb-3">
-                  <CFormLabel htmlFor="template_desc">Template Description</CFormLabel>
+                  <CFormLabel htmlFor="template_desc">Description</CFormLabel>
                   <CFormTextarea
                     id="template_desc"
                     name="template_desc"
@@ -183,15 +208,11 @@ const Templates = () => {
                     {submitting ? <CSpinner size="sm" /> : (
                       <>
                         <CIcon icon={cilSave} className="me-1" />
-                        Save
+                        {editingTemplateId ? 'Update Template' : 'Save Template'}
                       </>
                     )}
                   </CButton>
-                  <CButton
-                    color="secondary"
-                    variant="outline"
-                    onClick={() => { setForm({ ...INITIAL_FORM }); setShowForm(false) }}
-                  >
+                  <CButton color="secondary" variant="outline" onClick={resetForm}>
                     Cancel
                   </CButton>
                 </div>
@@ -202,8 +223,14 @@ const Templates = () => {
 
         {/* Template List */}
         <CCard>
-          <CCardHeader>
-            <strong>Template List</strong>
+          <CCardHeader className="d-flex justify-content-between align-items-center">
+            <div className="d-flex align-items-center gap-2">
+              <CIcon icon={cilNotes} height={16} className="text-primary" />
+              <strong>All Templates</strong>
+            </div>
+            {templates.length > 0 && (
+              <CBadge color="primary" shape="rounded-pill">{templates.length}</CBadge>
+            )}
           </CCardHeader>
           <CCardBody>
             {loading ? (
@@ -212,24 +239,24 @@ const Templates = () => {
               </div>
             ) : templates.length === 0 ? (
               <div className="suji-empty-state">
-                No templates found. Click "Add Template" to create one.
+                No templates found. Click &quot;Add Template&quot; to create one.
               </div>
             ) : (
-              <CTable hover responsive align="middle">
-                <CTableHead>
+              <CTable hover responsive align="middle" className="mb-0">
+                <CTableHead color="light">
                   <CTableRow>
-                    <CTableHeaderCell>#</CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
                     <CTableHeaderCell>Template Name</CTableHeaderCell>
                     <CTableHeaderCell>Description</CTableHeaderCell>
-                    <CTableHeaderCell>Questions</CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '100px', textAlign: 'center' }}>Questions</CTableHeaderCell>
                     <CTableHeaderCell>Keywords</CTableHeaderCell>
-                    <CTableHeaderCell>Actions</CTableHeaderCell>
+                    <CTableHeaderCell style={{ width: '160px', textAlign: 'center' }}>Actions</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
                   {templates.map((t, idx) => (
                     <CTableRow key={t.id || idx}>
-                      <CTableDataCell>{idx + 1}</CTableDataCell>
+                      <CTableDataCell className="text-body-secondary">{idx + 1}</CTableDataCell>
                       <CTableDataCell className="fw-semibold">{t.template_name}</CTableDataCell>
                       <CTableDataCell>
                         <span className="text-body-secondary" style={{ fontSize: '0.85rem' }}>
@@ -240,7 +267,7 @@ const Templates = () => {
                             : '-'}
                         </span>
                       </CTableDataCell>
-                      <CTableDataCell>
+                      <CTableDataCell className="text-center">
                         <CBadge color="primary" shape="rounded-pill">
                           {t.no_of_questions || 0}
                         </CBadge>
@@ -255,7 +282,7 @@ const Templates = () => {
                         ) : '-'}
                       </CTableDataCell>
                       <CTableDataCell>
-                        <div className="d-flex gap-2">
+                        <div className="d-flex gap-1 justify-content-center">
                           <CButton
                             color="primary"
                             variant="outline"
@@ -268,7 +295,7 @@ const Templates = () => {
                             color="info"
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/questionnaire/${t.id}?edit=true`)}
+                            onClick={() => handleEditTemplate(t)}
                           >
                             <CIcon icon={cilPencil} size="sm" className="me-1" />
                             Edit

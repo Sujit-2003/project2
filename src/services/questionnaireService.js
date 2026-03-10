@@ -24,6 +24,16 @@ export async function addTemplate({ template_name, template_desc, key_words, no_
   return safeJson(response)
 }
 
+// PUT /api/template/{template_id} — { template_name, template_desc, key_words, no_of_questions }
+export async function updateTemplate({ template_id, template_name, template_desc, key_words, no_of_questions }) {
+  const response = await fetch(`${API_URL}/template/${template_id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ template_name, template_desc, key_words, no_of_questions }),
+  })
+  return safeJson(response)
+}
+
 // No dedicated GET /api/template/:id — find from list
 export async function getTemplateById(templateId) {
   const res = await getTemplates()
