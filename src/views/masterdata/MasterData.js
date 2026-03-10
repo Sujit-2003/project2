@@ -256,23 +256,7 @@ const MasterData = () => {
           </CCard>
         ))}
 
-        {/* Bottom Save/Cancel for long pages */}
-        {editing && (
-          <div className="d-flex justify-content-end gap-2 mb-4">
-            <CButton color="primary" onClick={handleSave} disabled={saving}>
-              {saving ? <CSpinner size="sm" /> : (
-                <>
-                  <CIcon icon={cilSave} className="me-1" />
-                  Save
-                </>
-              )}
-            </CButton>
-            <CButton color="secondary" variant="outline" onClick={handleCancel}>
-              <CIcon icon={cilX} className="me-1" />
-              Cancel
-            </CButton>
-          </div>
-        )}
+
       </CCol>
     </CRow>
   )

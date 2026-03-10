@@ -21,7 +21,7 @@ import {
   CFormLabel,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus, cilNotes, cilX, cilSave } from '@coreui/icons'
+import { cilPlus, cilNotes, cilX, cilSave, cilPencil } from '@coreui/icons'
 import { getTemplates, addTemplate } from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
@@ -255,14 +255,25 @@ const Templates = () => {
                         ) : '-'}
                       </CTableDataCell>
                       <CTableDataCell>
-                        <CButton
-                          color="primary"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/questionnaire/${t.id}`)}
-                        >
-                          View
-                        </CButton>
+                        <div className="d-flex gap-2">
+                          <CButton
+                            color="primary"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/questionnaire/${t.id}`)}
+                          >
+                            View
+                          </CButton>
+                          <CButton
+                            color="info"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/questionnaire/${t.id}?edit=true`)}
+                          >
+                            <CIcon icon={cilPencil} size="sm" className="me-1" />
+                            Edit
+                          </CButton>
+                        </div>
                       </CTableDataCell>
                     </CTableRow>
                   ))}
