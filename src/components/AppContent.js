@@ -52,7 +52,20 @@ const AppContent = () => {
           {routes.map((route, idx) => {
             if (!route.element) return null
 
+            // Admin-only routes: block non-admin users
             if (route.adminOnly && roleId !== 2) {
+              // Allow doctors to access specific routes
+              if (roleId === 3 && route.doctorAllowed) {
+                return (
+                  <Route
+                    key={idx}
+                    path={route.path}
+                    exact={route.exact}
+                    name={route.name}
+                    element={<route.element />}
+                  />
+                )
+              }
               return (
                 <Route
                   key={idx}

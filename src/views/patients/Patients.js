@@ -17,17 +17,20 @@ import {
   CAlert,
   CBadge,
   CFormInput,
+  CFormSelect,
   CPagination,
   CPaginationItem,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus } from '@coreui/icons'
+import { cilPlus, cilChildFriendly } from '@coreui/icons'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
+import { assignDoctorToPatient } from '../../services/patientProfileService'
+import { useToast } from '../../components/ToastContext'
 import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
@@ -42,12 +45,16 @@ function calculateAge(dob) {
 
 const Patients = () => {
   const navigate = useNavigate()
+  const { showSuccess, showError } = useToast()
   const roleId = getRoleId()
   const isAdmin = roleId === 2
+  const isDoctor = roleId === 3
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [countries, setCountries] = useState([])
+  const [doctors, setDoctors] = useState([])
+  const [assigningDoctor, setAssigningDoctor] = useState({}) // { patientId: true }
 
   const {
     paginatedData,
@@ -56,7 +63,7 @@ const Patients = () => {
     searchTerm,
     setCurrentPage,
     setSearchTerm,
-  } = useTableControls(patients, ['patient_fname', 'patient_lname', 'p_relationship', 'contact_number', '_parentName'])
+  } = useTableControls(patients, ['patient_fname', 'patient_lname', 'p_relationship', 'contact_number', '_parentName', '_doctorName'])
 
   useEffect(() => {
     const loadPatients = async () => {
@@ -67,6 +74,16 @@ const Patients = () => {
         setCountries(countryData)
 
         if (isAdmin) {
+          // Load doctors list for assignment dropdown
+          const docRes = await getUsers(3)
+          const docList = Array.isArray(docRes) ? docRes : Array.isArray(docRes.data) ? docRes.data : []
+          setDoctors(docList.map((d) => ({
+            id: d.id,
+            name: decryptField(d.username || d.name || ''),
+            email: decryptSafe(d.emailid || d.email || ''),
+          })))
+
+          // Load all patients with parent info
           const userRes = await getUsers(1)
           let allUsers = []
           if (Array.isArray(userRes)) allUsers = userRes
@@ -79,9 +96,31 @@ const Patients = () => {
             ...p,
             _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
             _parentEmail: decryptSafe(p._parent?.emailid || p._parent?.email || ''),
+            _doctorName: p.doctor_name ? decryptField(p.doctor_name) : '',
+            _doctorId: p.doctor_id || null,
           }))
           setPatients(enriched)
+        } else if (isDoctor) {
+          // Doctor sees only assigned patients
+          const umId = getUmId()
+          // Try to get patients assigned to this doctor
+          // For now, get all patients and filter by doctor_id
+          const userRes = await getUsers(1)
+          let allUsers = []
+          if (Array.isArray(userRes)) allUsers = userRes
+          else if (Array.isArray(userRes.data)) allUsers = userRes.data
+
+          const pts = await getAllPatientsWithParent(allUsers)
+          const enriched = pts
+            .filter((p) => Number(p.doctor_id) === umId)
+            .map((p) => ({
+              ...p,
+              _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
+              _parentEmail: decryptSafe(p._parent?.emailid || p._parent?.email || ''),
+            }))
+          setPatients(enriched)
         } else {
+          // Parent: show own patients
           const umId = getUmId()
           const res = await getPatients(umId)
           if (Number(res.code) === 0) {
@@ -97,7 +136,7 @@ const Patients = () => {
       }
     }
     loadPatients()
-  }, [isAdmin])
+  }, [isAdmin, isDoctor])
 
   const renderContact = (contact, countryId) => {
     const countryObj = countries.find((c) => Number(c.country_id) === Number(countryId))
@@ -105,13 +144,50 @@ const Patients = () => {
     return display
   }
 
+  const handleAssignDoctor = async (patient, doctorId) => {
+    if (!doctorId) return
+    setAssigningDoctor((prev) => ({ ...prev, [patient.id]: true }))
+    try {
+      const res = await assignDoctorToPatient({
+        doctor_id: Number(doctorId),
+        patient_id: Number(patient.id),
+      })
+      if (Number(res.code) === 0) {
+        showSuccess('Doctor assigned successfully!')
+        // Update local state
+        const doc = doctors.find((d) => d.id === Number(doctorId))
+        setPatients((prev) =>
+          prev.map((p) =>
+            p.id === patient.id
+              ? { ...p, _doctorId: Number(doctorId), _doctorName: doc?.name || '', doctor_id: Number(doctorId) }
+              : p,
+          ),
+        )
+      } else {
+        showError(res.message || 'Failed to assign doctor.')
+      }
+    } catch {
+      showError('Network error assigning doctor.')
+    } finally {
+      setAssigningDoctor((prev) => ({ ...prev, [patient.id]: false }))
+    }
+  }
+
   return (
     <CRow>
       <CCol xs={12}>
         <CCard className="mb-4">
           <CCardHeader className="d-flex justify-content-between align-items-center">
-            <strong>Patients</strong>
-            {!isAdmin && (
+            <div className="d-flex align-items-center gap-2">
+              <CIcon icon={cilChildFriendly} height={18} className="text-primary" />
+              <strong>
+                {isDoctor ? 'My Assigned Patients' : 'Patients'}
+              </strong>
+              {patients.length > 0 && (
+                <CBadge color="primary" shape="rounded-pill">{patients.length}</CBadge>
+              )}
+            </div>
+            {!isAdmin && !isDoctor && (
               <CButton color="primary" size="sm" onClick={() => navigate('/patients/add')}>
                 <CIcon icon={cilPlus} className="me-1" />
                 Add Patient
@@ -136,25 +212,31 @@ const Patients = () => {
             {error && <CAlert color="danger">{error}</CAlert>}
             {!loading && !error && (
               <>
-                <CTable hover responsive>
-                  <CTableHead>
+                <CTable hover responsive align="middle" className="mb-0">
+                  <CTableHead color="light">
                     <CTableRow>
-                      <CTableHeaderCell>#</CTableHeaderCell>
+                      <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
                       <CTableHeaderCell>Name</CTableHeaderCell>
-                      {isAdmin && <CTableHeaderCell>Parent</CTableHeaderCell>}
+                      {(isAdmin || isDoctor) && <CTableHeaderCell>Parent</CTableHeaderCell>}
                       <CTableHeaderCell>Relationship</CTableHeaderCell>
                       <CTableHeaderCell>DOB</CTableHeaderCell>
                       <CTableHeaderCell>Age</CTableHeaderCell>
                       <CTableHeaderCell>Gender</CTableHeaderCell>
                       <CTableHeaderCell>Contact</CTableHeaderCell>
-                      <CTableHeaderCell>Details</CTableHeaderCell>
+                      {isAdmin && <CTableHeaderCell>Assigned Doctor</CTableHeaderCell>}
+                      {isDoctor && <CTableHeaderCell>Template Status</CTableHeaderCell>}
+                      {/* Parent sees template info */}
+                      {!isAdmin && !isDoctor && <CTableHeaderCell>Template</CTableHeaderCell>}
+                      <CTableHeaderCell style={{ width: '100px', textAlign: 'center' }}>Actions</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={isAdmin ? 9 : 8} className="text-center">
-                          <div className="suji-empty-state">No patients found.</div>
+                        <CTableDataCell colSpan={isAdmin ? 10 : 9} className="text-center">
+                          <div className="suji-empty-state">
+                            {isDoctor ? 'No patients assigned to you yet.' : 'No patients found.'}
+                          </div>
                         </CTableDataCell>
                       </CTableRow>
                     ) : (
@@ -162,21 +244,29 @@ const Patients = () => {
                         const contact = p.contact_number || p.contact_numb || ''
                         return (
                           <CTableRow key={p.id || index}>
-                            <CTableDataCell>{(currentPage - 1) * 10 + index + 1}</CTableDataCell>
+                            <CTableDataCell className="text-body-secondary">
+                              {(currentPage - 1) * 10 + index + 1}
+                            </CTableDataCell>
                             <CTableDataCell className="fw-semibold">
                               {p.patient_fname} {p.patient_lname}
                             </CTableDataCell>
-                            {isAdmin && (
+                            {(isAdmin || isDoctor) && (
                               <CTableDataCell>
-                                <CButton
-                                  color="link"
-                                  size="sm"
-                                  className="p-0 text-decoration-none"
-                                  onClick={() => navigate(`/users/${p.um_id}`)}
-                                >
-                                  {p._parentName || '-'}
-                                </CButton>
-                                <div className="small text-body-secondary">{p._parentEmail}</div>
+                                {isAdmin ? (
+                                  <CButton
+                                    color="link"
+                                    size="sm"
+                                    className="p-0 text-decoration-none"
+                                    onClick={() => navigate(`/users/${p.um_id}`)}
+                                  >
+                                    {p._parentName || '-'}
+                                  </CButton>
+                                ) : (
+                                  <span>{p._parentName || '-'}</span>
+                                )}
+                                {p._parentEmail && (
+                                  <div className="small text-body-secondary">{p._parentEmail}</div>
+                                )}
                               </CTableDataCell>
                             )}
                             <CTableDataCell>{p.p_relationship}</CTableDataCell>
@@ -188,7 +278,95 @@ const Patients = () => {
                               </CBadge>
                             </CTableDataCell>
                             <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
-                            <CTableDataCell>
+
+                            {/* Admin: Assign Doctor dropdown */}
+                            {isAdmin && (
+                              <CTableDataCell>
+                                {assigningDoctor[p.id] ? (
+                                  <CSpinner size="sm" color="primary" />
+                                ) : p._doctorName ? (
+                                  <div>
+                                    <CBadge color="success" shape="rounded-pill" className="mb-1">
+                                      {p._doctorName}
+                                    </CBadge>
+                                    <div>
+                                      <CFormSelect
+                                        size="sm"
+                                        style={{ width: '160px', fontSize: '0.75rem' }}
+                                        value=""
+                                        onChange={(e) => handleAssignDoctor(p, e.target.value)}
+                                      >
+                                        <option value="">Reassign...</option>
+                                        {doctors.map((d) => (
+                                          <option key={d.id} value={d.id}>
+                                            {d.name}
+                                          </option>
+                                        ))}
+                                      </CFormSelect>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <CFormSelect
+                                    size="sm"
+                                    style={{ width: '160px' }}
+                                    value=""
+                                    onChange={(e) => handleAssignDoctor(p, e.target.value)}
+                                  >
+                                    <option value="">Assign Doctor</option>
+                                    {doctors.map((d) => (
+                                      <option key={d.id} value={d.id}>
+                                        {d.name}
+                                      </option>
+                                    ))}
+                                  </CFormSelect>
+                                )}
+                              </CTableDataCell>
+                            )}
+
+                            {/* Doctor: Template status */}
+                            {isDoctor && (
+                              <CTableDataCell>
+                                {p.template_name ? (
+                                  <CBadge
+                                    color={
+                                      p.template_status === 'reviewed' ? 'success'
+                                        : p.template_status === 'submitted' ? 'info'
+                                          : 'warning'
+                                    }
+                                    shape="rounded-pill"
+                                  >
+                                    {p.template_name}
+                                    {p.template_status ? ` (${p.template_status})` : ' (Pending)'}
+                                  </CBadge>
+                                ) : (
+                                  <span className="text-body-secondary small">No template</span>
+                                )}
+                              </CTableDataCell>
+                            )}
+
+                            {/* Parent: Template info */}
+                            {!isAdmin && !isDoctor && (
+                              <CTableDataCell>
+                                {p.template_name ? (
+                                  <CBadge
+                                    color={
+                                      p.template_status === 'submitted' ? 'info'
+                                        : p.template_status === 'reviewed' ? 'success'
+                                          : 'warning'
+                                    }
+                                    shape="rounded-pill"
+                                  >
+                                    {p.template_status === 'submitted' ? 'Submitted'
+                                      : p.template_status === 'reviewed' ? 'Reviewed'
+                                        : 'Pending'}
+                                  </CBadge>
+                                ) : (
+                                  <span className="text-body-secondary small">-</span>
+                                )}
+                              </CTableDataCell>
+                            )}
+
+                            <CTableDataCell className="text-center">
                               <CButton
                                 color="primary"
                                 variant="ghost"

@@ -62,8 +62,10 @@ const Login = () => {
         const roleId = Number(res.data.roleid ?? res.data.roleId ?? res.data.role_id ?? 1)
 
         storeSession(res.data, email.toLowerCase(), roleId)
-        showSuccess('Login successful! Redirecting to dashboard...')
-        setTimeout(() => navigate('/dashboard'), 500)
+        showSuccess('Login successful! Redirecting...')
+        // Admin → dashboard, Doctor → patients, Parent → patients
+        const redirectPath = roleId === 2 ? '/dashboard' : '/patients'
+        setTimeout(() => navigate(redirectPath), 500)
       } else {
         showError('Invalid email or password.')
       }

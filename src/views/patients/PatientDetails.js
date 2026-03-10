@@ -17,9 +17,17 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormSelect,
+  CFormTextarea,
+  CFormLabel,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilArrowLeft, cilPlus, cilCalendar, cilPencil, cilTrash } from '@coreui/icons'
+import { cilArrowLeft, cilPlus, cilCalendar, cilPencil, cilTrash, cilSave, cilNotes, cilMedicalCross } from '@coreui/icons'
 import { SchedulerForm } from './ActivityScheduler'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
@@ -28,6 +36,8 @@ import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
+import { assignTemplateToPatient, submitDoctorReview } from '../../services/patientProfileService'
+import { getTemplates } from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
 function calculateAge(dob) {
@@ -66,6 +76,8 @@ const PatientDetails = () => {
   const { showSuccess, showError } = useToast()
   const roleId = getRoleId()
   const isAdmin = roleId === 2
+  const isDoctor = roleId === 3
+  const isParent = roleId === 1
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,9 +86,23 @@ const PatientDetails = () => {
   const [editActivity, setEditActivity] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  // Activities state (inline)
+  // Activities state
   const [activities, setActivities] = useState([])
   const [activitiesLoading, setActivitiesLoading] = useState(true)
+
+  // Template assignment (doctor)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [templates, setTemplates] = useState([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [assigningTemplate, setAssigningTemplate] = useState(false)
+
+  // Doctor review
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviewForm, setReviewForm] = useState({
+    health_analysis: '',
+    prescription_summary: '',
+  })
+  const [submittingReview, setSubmittingReview] = useState(false)
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -86,15 +112,17 @@ const PatientDetails = () => {
 
         let allPatients = []
 
-        if (isAdmin) {
+        if (isAdmin || isDoctor) {
           const userRes = await getUsers(1)
           let allUsers = []
           if (Array.isArray(userRes)) allUsers = userRes
           else if (Array.isArray(userRes.data)) allUsers = userRes.data
 
-          const adminId = getAdminId()
-          const filtered = allUsers.filter((u) => u.id !== adminId)
-          allPatients = await getAllPatientsWithParent(filtered)
+          if (isAdmin) {
+            const adminId = getAdminId()
+            allUsers = allUsers.filter((u) => u.id !== adminId)
+          }
+          allPatients = await getAllPatientsWithParent(allUsers)
         } else {
           const umId = getUmId()
           const res = await getPatients(umId)
@@ -106,6 +134,13 @@ const PatientDetails = () => {
         const found = allPatients.find((p) => String(p.id) === String(id))
         if (found) {
           setPatient(found)
+          // Pre-fill review form if data exists
+          if (found.health_analysis || found.prescription_summary) {
+            setReviewForm({
+              health_analysis: found.health_analysis || '',
+              prescription_summary: found.prescription_summary || '',
+            })
+          }
         } else {
           setError('Patient not found.')
         }
@@ -116,7 +151,7 @@ const PatientDetails = () => {
       }
     }
     loadPatient()
-  }, [id, isAdmin])
+  }, [id, isAdmin, isDoctor])
 
   const loadActivities = async () => {
     if (!id) return
@@ -155,6 +190,85 @@ const PatientDetails = () => {
     }
   }
 
+  // ─── Template Assignment (Doctor) ───
+
+  const handleOpenTemplateModal = async () => {
+    setShowTemplateModal(true)
+    try {
+      const res = await getTemplates()
+      if (Number(res.code) === 0 && Array.isArray(res.data)) {
+        setTemplates(res.data)
+      }
+    } catch {
+      // templates remain empty
+    }
+  }
+
+  const handleAssignTemplate = async () => {
+    if (!selectedTemplateId) return
+    setAssigningTemplate(true)
+    try {
+      const profileId = patient.profile_id || patient.id
+      const res = await assignTemplateToPatient({
+        profile_id: profileId,
+        template_id: Number(selectedTemplateId),
+      })
+      if (Number(res.code) === 0) {
+        showSuccess('Template assigned to patient successfully!')
+        const tpl = templates.find((t) => String(t.id) === String(selectedTemplateId))
+        setPatient((prev) => ({
+          ...prev,
+          template_id: Number(selectedTemplateId),
+          template_name: tpl?.template_name || '',
+          template_status: 'pending',
+        }))
+        setShowTemplateModal(false)
+        setSelectedTemplateId('')
+      } else {
+        showError(res.message || 'Failed to assign template.')
+      }
+    } catch {
+      showError('Network error assigning template.')
+    } finally {
+      setAssigningTemplate(false)
+    }
+  }
+
+  // ─── Doctor Review ───
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault()
+    if (!reviewForm.health_analysis.trim() && !reviewForm.prescription_summary.trim()) {
+      showError('Please enter at least a summary or precautions.')
+      return
+    }
+    setSubmittingReview(true)
+    try {
+      const profileId = patient.profile_id || patient.id
+      const res = await submitDoctorReview({
+        profile_id: profileId,
+        health_analysis: reviewForm.health_analysis.trim(),
+        prescription_summary: reviewForm.prescription_summary.trim(),
+      })
+      if (Number(res.code) === 0) {
+        showSuccess('Review submitted successfully!')
+        setPatient((prev) => ({
+          ...prev,
+          health_analysis: reviewForm.health_analysis.trim(),
+          prescription_summary: reviewForm.prescription_summary.trim(),
+          template_status: 'reviewed',
+        }))
+        setShowReviewForm(false)
+      } else {
+        showError(res.message || 'Failed to submit review.')
+      }
+    } catch {
+      showError('Network error submitting review.')
+    } finally {
+      setSubmittingReview(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="suji-loading">
@@ -177,6 +291,8 @@ const PatientDetails = () => {
 
   const age = calculateAge(patient.p_dob)
   const initials = `${(patient.patient_fname || '')[0] || ''}${(patient.patient_lname || '')[0] || ''}`.toUpperCase()
+
+  const templateStatus = patient.template_status || (patient.template_id ? 'pending' : null)
 
   return (
     <CRow className="justify-content-center">
@@ -217,6 +333,18 @@ const PatientDetails = () => {
                       {patient.p_relationship}
                     </CBadge>
                   )}
+                  {templateStatus && (
+                    <CBadge
+                      color={
+                        templateStatus === 'reviewed' ? 'success'
+                          : templateStatus === 'submitted' ? 'info'
+                            : 'warning'
+                      }
+                      shape="rounded-pill"
+                    >
+                      Template: {templateStatus.charAt(0).toUpperCase() + templateStatus.slice(1)}
+                    </CBadge>
+                  )}
                 </div>
               </div>
             </div>
@@ -245,9 +373,21 @@ const PatientDetails = () => {
             <div className="suji-detail-row">
               <div className="detail-label">Assigned Doctor</div>
               <div className="detail-value">
-                {patient.doctor_name || <span className="text-body-secondary">Not assigned</span>}
+                {patient.doctor_name ? (
+                  <CBadge color="success" shape="rounded-pill">{patient.doctor_name}</CBadge>
+                ) : (
+                  <span className="text-body-secondary">Not assigned</span>
+                )}
               </div>
             </div>
+            {patient.template_name && (
+              <div className="suji-detail-row">
+                <div className="detail-label">Assigned Template</div>
+                <div className="detail-value">
+                  <CBadge color="primary" shape="rounded-pill">{patient.template_name}</CBadge>
+                </div>
+              </div>
+            )}
             <div className="suji-detail-row">
               <div className="detail-label">Date of Birth</div>
               <div className="detail-value">{patient.p_dob?.split(' ')[0] || '-'}</div>
@@ -261,18 +401,22 @@ const PatientDetails = () => {
               <div className="detail-value">{countryName || '-'}</div>
             </div>
 
-            {isAdmin && parentName && (
+            {(isAdmin || isDoctor) && parentName && (
               <div className="suji-detail-row">
                 <div className="detail-label">Parent</div>
                 <div className="detail-value">
-                  <CButton
-                    color="link"
-                    size="sm"
-                    className="p-0 text-decoration-none"
-                    onClick={() => navigate(`/users/${patient.um_id}`)}
-                  >
-                    {parentName}
-                  </CButton>
+                  {isAdmin ? (
+                    <CButton
+                      color="link"
+                      size="sm"
+                      className="p-0 text-decoration-none"
+                      onClick={() => navigate(`/users/${patient.um_id}`)}
+                    >
+                      {parentName}
+                    </CButton>
+                  ) : (
+                    <span>{parentName}</span>
+                  )}
                   {parentEmail && (
                     <div className="small text-body-secondary">{parentEmail}</div>
                   )}
@@ -290,6 +434,181 @@ const PatientDetails = () => {
             )}
           </CCardBody>
         </CCard>
+
+        {/* ── Doctor Actions Card ── */}
+        {isDoctor && (
+          <CCard className="mb-4 border-primary">
+            <CCardHeader>
+              <div className="d-flex align-items-center gap-2">
+                <CIcon icon={cilMedicalCross} height={18} className="text-primary" />
+                <strong>Doctor Actions</strong>
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              <div className="d-flex flex-wrap gap-3">
+                {/* Assign Template Button */}
+                <CButton
+                  color="primary"
+                  onClick={handleOpenTemplateModal}
+                >
+                  <CIcon icon={cilNotes} className="me-1" />
+                  {patient.template_name ? 'Change Template' : 'Assign Template'}
+                </CButton>
+
+                {/* Review / Summary Button */}
+                <CButton
+                  color="success"
+                  onClick={() => setShowReviewForm(!showReviewForm)}
+                >
+                  <CIcon icon={cilPencil} className="me-1" />
+                  {patient.health_analysis ? 'Update Review' : 'Write Review'}
+                </CButton>
+              </div>
+
+              {/* Doctor Summary Display */}
+              {(patient.health_analysis || patient.prescription_summary) && !showReviewForm && (
+                <div className="mt-4">
+                  <h6 className="fw-bold mb-3">Current Review</h6>
+                  {patient.health_analysis && (
+                    <div className="mb-3">
+                      <div className="text-body-secondary small mb-1">Health Analysis / Summary</div>
+                      <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)' }}>
+                        {patient.health_analysis}
+                      </div>
+                    </div>
+                  )}
+                  {patient.prescription_summary && (
+                    <div>
+                      <div className="text-body-secondary small mb-1">Prescription / Precautions</div>
+                      <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)' }}>
+                        {patient.prescription_summary}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* ── Doctor Review Form ── */}
+        {isDoctor && showReviewForm && (
+          <CCard className="mb-4 border-success">
+            <CCardHeader className="d-flex justify-content-between align-items-center">
+              <strong>Doctor Review &amp; Summary</strong>
+              <CButton color="light" size="sm" onClick={() => setShowReviewForm(false)}>
+                Close
+              </CButton>
+            </CCardHeader>
+            <CCardBody>
+              <form onSubmit={handleSubmitReview}>
+                <div className="mb-3">
+                  <CFormLabel>Health Analysis / Doctor Summary</CFormLabel>
+                  <CFormTextarea
+                    value={reviewForm.health_analysis}
+                    onChange={(e) => setReviewForm({ ...reviewForm, health_analysis: e.target.value })}
+                    rows={4}
+                    placeholder="Enter your health analysis, observations, and summary..."
+                  />
+                </div>
+                <div className="mb-3">
+                  <CFormLabel>Prescription Summary / Precautions</CFormLabel>
+                  <CFormTextarea
+                    value={reviewForm.prescription_summary}
+                    onChange={(e) => setReviewForm({ ...reviewForm, prescription_summary: e.target.value })}
+                    rows={4}
+                    placeholder="Enter precautions, recommendations, and prescriptions..."
+                  />
+                </div>
+                <div className="d-flex gap-2">
+                  <CButton type="submit" color="success" disabled={submittingReview}>
+                    {submittingReview ? <CSpinner size="sm" /> : (
+                      <>
+                        <CIcon icon={cilSave} className="me-1" />
+                        Submit Review
+                      </>
+                    )}
+                  </CButton>
+                  <CButton color="secondary" variant="outline" onClick={() => setShowReviewForm(false)}>
+                    Cancel
+                  </CButton>
+                </div>
+              </form>
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* ── Parent: Doctor Review Display ── */}
+        {isParent && (patient.health_analysis || patient.prescription_summary) && (
+          <CCard className="mb-4 border-success">
+            <CCardHeader>
+              <div className="d-flex align-items-center gap-2">
+                <CIcon icon={cilMedicalCross} height={18} className="text-success" />
+                <strong>Doctor&apos;s Review</strong>
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              {patient.health_analysis && (
+                <div className="mb-3">
+                  <div className="text-body-secondary small mb-1">Health Analysis / Summary</div>
+                  <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)', whiteSpace: 'pre-line' }}>
+                    {patient.health_analysis}
+                  </div>
+                </div>
+              )}
+              {patient.prescription_summary && (
+                <div>
+                  <div className="text-body-secondary small mb-1">Prescription / Precautions</div>
+                  <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)', whiteSpace: 'pre-line' }}>
+                    {patient.prescription_summary}
+                  </div>
+                </div>
+              )}
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* ── Template Assignment Modal ── */}
+        <CModal visible={showTemplateModal} onClose={() => setShowTemplateModal(false)}>
+          <CModalHeader>
+            <CModalTitle>Assign Template</CModalTitle>
+          </CModalHeader>
+          <CModalBody>
+            <p className="text-body-secondary mb-3">
+              Select a questionnaire template to assign to <strong>{patient.patient_fname} {patient.patient_lname}</strong>.
+            </p>
+            {templates.length === 0 ? (
+              <div className="text-center py-3">
+                <CSpinner size="sm" color="primary" />
+                <div className="small text-body-secondary mt-2">Loading templates...</div>
+              </div>
+            ) : (
+              <CFormSelect
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+              >
+                <option value="">-- Select Template --</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.template_name} ({t.no_of_questions || 0} questions)
+                  </option>
+                ))}
+              </CFormSelect>
+            )}
+          </CModalBody>
+          <CModalFooter>
+            <CButton color="secondary" variant="outline" onClick={() => setShowTemplateModal(false)}>
+              Cancel
+            </CButton>
+            <CButton
+              color="primary"
+              disabled={!selectedTemplateId || assigningTemplate}
+              onClick={handleAssignTemplate}
+            >
+              {assigningTemplate ? <CSpinner size="sm" /> : 'Send Template'}
+            </CButton>
+          </CModalFooter>
+        </CModal>
 
         {/* Activities Section */}
         {!isAdmin && showForm && (

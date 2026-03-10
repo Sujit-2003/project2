@@ -79,6 +79,25 @@ const adminNav = [
   },
 ]
 
+const doctorNav = [
+  {
+    component: CNavItem,
+    name: 'Dashboard',
+    to: '/dashboard',
+    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavTitle,
+    name: 'Patient Care',
+  },
+  {
+    component: CNavItem,
+    name: 'My Patients',
+    to: '/patients',
+    icon: <CIcon icon={cilChildFriendly} customClassName="nav-icon" />,
+  },
+]
+
 const parentNav = [
   {
     component: CNavItem,
@@ -99,7 +118,9 @@ const parentNav = [
 ]
 
 export function getNavItemsByRole(roleId) {
-  if (Number(roleId) === 2) return adminNav
+  const role = Number(roleId)
+  if (role === 2) return adminNav
+  if (role === 3) return doctorNav
   return parentNav
 }
 
