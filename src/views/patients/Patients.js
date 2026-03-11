@@ -106,7 +106,34 @@ const Patients = () => {
             const userMap = {}
             allUsers.forEach((u) => { userMap[u.id] = u })
 
-            const enriched = docPtsRes.data.map((p) => {
+            // Fetch profile for each patient to get doctor_id and template status
+            const profilesEnriched = await Promise.all(
+              docPtsRes.data.map(async (p) => {
+                try {
+                  const profileRes = await getPatientProfile(p.id)
+                  if (Number(profileRes.code) === 0 && profileRes.data) {
+                    return {
+                      ...p,
+                      profile_id: profileRes.data.profile_id || profileRes.data.id,
+                      doctor_id: profileRes.data.doctor_id,
+                      doctor_name: profileRes.data.doctor_name,
+                      template_id: profileRes.data.template_id,
+                      template_name: profileRes.data.template_name,
+                      template_status: profileRes.data.template_status,
+                      health_analysis: profileRes.data.health_analysis,
+                      prescription_summary: profileRes.data.prescription_summary,
+                      assigned_date: profileRes.data.created_at || profileRes.data.updated_at || null,
+                    }
+                  }
+                } catch { /* no profile yet */ }
+                return p
+              })
+            )
+
+            // Explicitly filter to show only this doctor's patients
+            const assignedPatients = profilesEnriched.filter((p) => Number(p.doctor_id) === Number(umId))
+
+            const finalEnriched = assignedPatients.map((p) => {
               const parent = userMap[p.um_id]
               return {
                 ...p,
@@ -114,7 +141,7 @@ const Patients = () => {
                 _parentEmail: parent ? decryptSafe(parent.emailid || parent.email || '') : '',
               }
             })
-            setPatients(enriched)
+            setPatients(finalEnriched)
           } else {
             setPatients([])
           }
@@ -166,11 +193,7 @@ const Patients = () => {
   }
 
   // Calculate column count for empty state
-  let colCount = 8 // base: #, Name, Relationship, DOB, Age, Gender, Contact, Actions
-  if (isAdmin || isDoctor) colCount++ // Parent column
-  if (isAdmin) colCount++ // Assigned Doctor column
-  if (isDoctor) colCount++ // Template Status column
-  if (!isAdmin && !isDoctor) colCount++ // Template column for parent
+  let colCount = isDoctor ? 7 : (isAdmin ? 10 : 9)
 
   return (
     <CRow>
@@ -215,16 +238,26 @@ const Patients = () => {
                   <CTableHead color="light">
                     <CTableRow>
                       <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
-                      <CTableHeaderCell>Name</CTableHeaderCell>
-                      {(isAdmin || isDoctor) && <CTableHeaderCell>Parent</CTableHeaderCell>}
-                      <CTableHeaderCell>Relationship</CTableHeaderCell>
-                      <CTableHeaderCell>DOB</CTableHeaderCell>
-                      <CTableHeaderCell>Age</CTableHeaderCell>
-                      <CTableHeaderCell>Gender</CTableHeaderCell>
-                      <CTableHeaderCell>Contact</CTableHeaderCell>
-                      {isAdmin && <CTableHeaderCell>Assigned Doctor</CTableHeaderCell>}
-                      {isDoctor && <CTableHeaderCell>Template Status</CTableHeaderCell>}
-                      {!isAdmin && !isDoctor && <CTableHeaderCell>Template</CTableHeaderCell>}
+                      <CTableHeaderCell>Patient Name</CTableHeaderCell>
+                      {isDoctor ? (
+                        <>
+                          <CTableHeaderCell>Age</CTableHeaderCell>
+                          <CTableHeaderCell>Parent Name</CTableHeaderCell>
+                          <CTableHeaderCell>Assigned Date</CTableHeaderCell>
+                          <CTableHeaderCell>Status</CTableHeaderCell>
+                        </>
+                      ) : (
+                        <>
+                          {isAdmin && <CTableHeaderCell>Parent</CTableHeaderCell>}
+                          <CTableHeaderCell>Relationship</CTableHeaderCell>
+                          <CTableHeaderCell>DOB</CTableHeaderCell>
+                          <CTableHeaderCell>Age</CTableHeaderCell>
+                          <CTableHeaderCell>Gender</CTableHeaderCell>
+                          <CTableHeaderCell>Contact</CTableHeaderCell>
+                          {isAdmin && <CTableHeaderCell>Assigned Doctor</CTableHeaderCell>}
+                          {!isAdmin && <CTableHeaderCell>Template</CTableHeaderCell>}
+                        </>
+                      )}
                       <CTableHeaderCell style={{ width: '80px', textAlign: 'center' }}>Action</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
@@ -248,89 +281,95 @@ const Patients = () => {
                             <CTableDataCell className="fw-semibold">
                               {p.patient_fname} {p.patient_lname}
                             </CTableDataCell>
-                            {(isAdmin || isDoctor) && (
-                              <CTableDataCell>
-                                {isAdmin ? (
-                                  <CButton
-                                    color="link"
-                                    size="sm"
-                                    className="p-0 text-decoration-none"
-                                    onClick={() => navigate(`/users/${p.um_id}`)}
-                                  >
-                                    {p._parentName || '-'}
-                                  </CButton>
-                                ) : (
+                            {isDoctor ? (
+                              <>
+                                <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
+                                <CTableDataCell>
                                   <span>{p._parentName || '-'}</span>
+                                  {p._parentEmail && (
+                                    <div className="small text-body-secondary">{p._parentEmail}</div>
+                                  )}
+                                </CTableDataCell>
+                                <CTableDataCell>
+                                  {p.assigned_date ? new Date(p.assigned_date).toLocaleDateString() : '-'}
+                                </CTableDataCell>
+                                <CTableDataCell>
+                                  {p.template_name ? (
+                                    <CBadge
+                                      color={
+                                        p.template_status === 'reviewed' ? 'success'
+                                          : p.template_status === 'submitted' ? 'info'
+                                            : 'warning'
+                                      }
+                                      shape="rounded-pill"
+                                    >
+                                      {p.template_status ? (p.template_status.charAt(0).toUpperCase() + p.template_status.slice(1)) : 'Pending'}
+                                    </CBadge>
+                                  ) : (
+                                    <span className="text-body-secondary small">No template</span>
+                                  )}
+                                </CTableDataCell>
+                              </>
+                            ) : (
+                              <>
+                                {isAdmin && (
+                                  <CTableDataCell>
+                                    <CButton
+                                      color="link"
+                                      size="sm"
+                                      className="p-0 text-decoration-none"
+                                      onClick={() => navigate(`/users/${p.um_id}`)}
+                                    >
+                                      {p._parentName || '-'}
+                                    </CButton>
+                                    {p._parentEmail && (
+                                      <div className="small text-body-secondary">{p._parentEmail}</div>
+                                    )}
+                                  </CTableDataCell>
                                 )}
-                                {p._parentEmail && (
-                                  <div className="small text-body-secondary">{p._parentEmail}</div>
-                                )}
-                              </CTableDataCell>
-                            )}
-                            <CTableDataCell>{p.p_relationship}</CTableDataCell>
-                            <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
-                            <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
-                            <CTableDataCell>
-                              <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'} shape="rounded-pill">
-                                {p.user_gender}
-                              </CBadge>
-                            </CTableDataCell>
-                            <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
-
-                            {/* Admin: Show assigned doctor name (read-only) */}
-                            {isAdmin && (
-                              <CTableDataCell>
-                                {p._doctorName ? (
-                                  <CBadge color="success" shape="rounded-pill">
-                                    {p._doctorName}
+                                <CTableDataCell>{p.p_relationship}</CTableDataCell>
+                                <CTableDataCell>{p.p_dob?.split(' ')[0]}</CTableDataCell>
+                                <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
+                                <CTableDataCell>
+                                  <CBadge color={p.user_gender === 'Male' ? 'info' : 'warning'} shape="rounded-pill">
+                                    {p.user_gender}
                                   </CBadge>
-                                ) : (
-                                  <span className="text-body-secondary small">Not assigned</span>
-                                )}
-                              </CTableDataCell>
-                            )}
+                                </CTableDataCell>
+                                <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
 
-                            {/* Doctor: Template status */}
-                            {isDoctor && (
-                              <CTableDataCell>
-                                {p.template_name ? (
-                                  <CBadge
-                                    color={
-                                      p.template_status === 'reviewed' ? 'success'
-                                        : p.template_status === 'submitted' ? 'info'
-                                          : 'warning'
-                                    }
-                                    shape="rounded-pill"
-                                  >
-                                    {p.template_name}
-                                    {p.template_status ? ` (${p.template_status})` : ' (Pending)'}
-                                  </CBadge>
-                                ) : (
-                                  <span className="text-body-secondary small">No template</span>
+                                {isAdmin && (
+                                  <CTableDataCell>
+                                    {p._doctorName ? (
+                                      <CBadge color="success" shape="rounded-pill">
+                                        {p._doctorName}
+                                      </CBadge>
+                                    ) : (
+                                      <span className="text-body-secondary small">Not assigned</span>
+                                    )}
+                                  </CTableDataCell>
                                 )}
-                              </CTableDataCell>
-                            )}
-
-                            {/* Parent: Template info */}
-                            {!isAdmin && !isDoctor && (
-                              <CTableDataCell>
-                                {p.template_name ? (
-                                  <CBadge
-                                    color={
-                                      p.template_status === 'submitted' ? 'info'
-                                        : p.template_status === 'reviewed' ? 'success'
-                                          : 'warning'
-                                    }
-                                    shape="rounded-pill"
-                                  >
-                                    {p.template_status === 'submitted' ? 'Submitted'
-                                      : p.template_status === 'reviewed' ? 'Reviewed'
-                                        : 'Pending'}
-                                  </CBadge>
-                                ) : (
-                                  <span className="text-body-secondary small">-</span>
+                                
+                                {!isAdmin && (
+                                  <CTableDataCell>
+                                    {p.template_name ? (
+                                      <CBadge
+                                        color={
+                                          p.template_status === 'submitted' ? 'info'
+                                            : p.template_status === 'reviewed' ? 'success'
+                                              : 'warning'
+                                        }
+                                        shape="rounded-pill"
+                                      >
+                                        {p.template_status === 'submitted' ? 'Submitted'
+                                          : p.template_status === 'reviewed' ? 'Reviewed'
+                                            : 'Pending'}
+                                      </CBadge>
+                                    ) : (
+                                      <span className="text-body-secondary small">-</span>
+                                    )}
+                                  </CTableDataCell>
                                 )}
-                              </CTableDataCell>
+                              </>
                             )}
 
                             <CTableDataCell className="text-center">

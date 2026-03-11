@@ -148,7 +148,7 @@ const PatientDetails = () => {
                 ...enriched,
                 profile_id: prof.profile_id || prof.id || null,
                 doctor_id: prof.doctor_id || null,
-                doctor_name: prof.doctor_name || null,
+                doctor_name: prof.doctor_name ? decryptField(prof.doctor_name) : null,
                 template_id: prof.template_id || null,
                 template_name: prof.template_name || null,
                 template_status: prof.template_status || null,
