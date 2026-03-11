@@ -36,7 +36,7 @@ import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
-import { assignDoctorToPatient, assignTemplateToPatient, submitDoctorReview } from '../../services/patientProfileService'
+import { assignDoctorToPatient, assignTemplateToPatient, submitDoctorReview, getPatientProfile } from '../../services/patientProfileService'
 import { getTemplates } from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
@@ -138,11 +138,32 @@ const PatientDetails = () => {
 
         const found = allPatients.find((p) => String(p.id) === String(id))
         if (found) {
-          setPatient(found)
-          if (found.health_analysis || found.prescription_summary) {
+          // Fetch profile data (doctor, template, analysis) from separate endpoint
+          let enriched = { ...found }
+          try {
+            const profileRes = await getPatientProfile(found.id)
+            if (Number(profileRes.code) === 0 && profileRes.data) {
+              const prof = profileRes.data
+              enriched = {
+                ...enriched,
+                profile_id: prof.profile_id || prof.id || null,
+                doctor_id: prof.doctor_id || null,
+                doctor_name: prof.doctor_name || null,
+                template_id: prof.template_id || null,
+                template_name: prof.template_name || null,
+                template_status: prof.template_status || null,
+                health_analysis: prof.health_analysis || null,
+                prescription_summary: prof.prescription_summary || null,
+              }
+            }
+          } catch {
+            // No profile yet — that's fine
+          }
+          setPatient(enriched)
+          if (enriched.health_analysis || enriched.prescription_summary) {
             setReviewForm({
-              health_analysis: found.health_analysis || '',
-              prescription_summary: found.prescription_summary || '',
+              health_analysis: enriched.health_analysis || '',
+              prescription_summary: enriched.prescription_summary || '',
             })
           }
         } else {
@@ -219,11 +240,12 @@ const PatientDetails = () => {
       if (Number(res.code) === 0) {
         showSuccess('Doctor assigned successfully!')
         const doc = doctors.find((d) => d.id === Number(selectedDoctorId))
+        const newProfileId = res.data?.profile_id || res.data?.id || null
         setPatient((prev) => ({
           ...prev,
           doctor_id: Number(selectedDoctorId),
           doctor_name: doc?.name || '',
-          profile_id: res.data?.id || res.data?.profile_id || prev.profile_id,
+          profile_id: newProfileId || prev.profile_id,
         }))
         setSelectedDoctorId('')
       } else {

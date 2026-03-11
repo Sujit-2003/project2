@@ -28,6 +28,7 @@ import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
+import { getDoctorPatients, getPatientProfile } from '../../services/patientProfileService'
 import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
@@ -93,28 +94,58 @@ const Patients = () => {
           }))
           setPatients(enriched)
         } else if (isDoctor) {
-          // Doctor sees only assigned patients
+          // Doctor sees only assigned patients via dedicated endpoint
           const umId = getUmId()
-          const userRes = await getUsers(1)
-          let allUsers = []
-          if (Array.isArray(userRes)) allUsers = userRes
-          else if (Array.isArray(userRes.data)) allUsers = userRes.data
+          const docPtsRes = await getDoctorPatients(umId)
+          if (Number(docPtsRes.code) === 0 && Array.isArray(docPtsRes.data)) {
+            // Load parent info for each patient
+            const userRes = await getUsers(1)
+            let allUsers = []
+            if (Array.isArray(userRes)) allUsers = userRes
+            else if (Array.isArray(userRes.data)) allUsers = userRes.data
+            const userMap = {}
+            allUsers.forEach((u) => { userMap[u.id] = u })
 
-          const pts = await getAllPatientsWithParent(allUsers)
-          const enriched = pts
-            .filter((p) => Number(p.doctor_id) === umId)
-            .map((p) => ({
-              ...p,
-              _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
-              _parentEmail: decryptSafe(p._parent?.emailid || p._parent?.email || ''),
-            }))
-          setPatients(enriched)
+            const enriched = docPtsRes.data.map((p) => {
+              const parent = userMap[p.um_id]
+              return {
+                ...p,
+                _parentName: parent ? decryptField(parent.username || parent.name || '') : '',
+                _parentEmail: parent ? decryptSafe(parent.emailid || parent.email || '') : '',
+              }
+            })
+            setPatients(enriched)
+          } else {
+            setPatients([])
+          }
         } else {
-          // Parent: show own patients
+          // Parent: show own patients + enrich with profile data
           const umId = getUmId()
           const res = await getPatients(umId)
-          if (Number(res.code) === 0) {
-            setPatients(Array.isArray(res.data) ? res.data : [])
+          if (Number(res.code) === 0 && Array.isArray(res.data)) {
+            // Fetch profile for each patient to get template status
+            const enriched = await Promise.all(
+              res.data.map(async (p) => {
+                try {
+                  const profileRes = await getPatientProfile(p.id)
+                  if (Number(profileRes.code) === 0 && profileRes.data) {
+                    return {
+                      ...p,
+                      profile_id: profileRes.data.profile_id || profileRes.data.id,
+                      doctor_id: profileRes.data.doctor_id,
+                      doctor_name: profileRes.data.doctor_name,
+                      template_id: profileRes.data.template_id,
+                      template_name: profileRes.data.template_name,
+                      template_status: profileRes.data.template_status,
+                      health_analysis: profileRes.data.health_analysis,
+                      prescription_summary: profileRes.data.prescription_summary,
+                    }
+                  }
+                } catch { /* no profile yet */ }
+                return p
+              }),
+            )
+            setPatients(enriched)
           } else {
             setError(res.message || 'Failed to load patients.')
           }
