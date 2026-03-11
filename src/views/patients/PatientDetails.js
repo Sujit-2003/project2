@@ -27,7 +27,7 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilArrowLeft, cilPlus, cilCalendar, cilPencil, cilTrash, cilSave, cilNotes, cilMedicalCross } from '@coreui/icons'
+import { cilArrowLeft, cilPlus, cilCalendar, cilPencil, cilTrash, cilSave, cilNotes, cilMedicalCross, cilUserFollow } from '@coreui/icons'
 import { SchedulerForm } from './ActivityScheduler'
 import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
@@ -36,7 +36,7 @@ import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
-import { assignTemplateToPatient, submitDoctorReview } from '../../services/patientProfileService'
+import { assignDoctorToPatient, assignTemplateToPatient, submitDoctorReview } from '../../services/patientProfileService'
 import { getTemplates } from '../../services/questionnaireService'
 import { useToast } from '../../components/ToastContext'
 
@@ -90,13 +90,18 @@ const PatientDetails = () => {
   const [activities, setActivities] = useState([])
   const [activitiesLoading, setActivitiesLoading] = useState(true)
 
-  // Template assignment (doctor)
+  // Admin: Doctor assignment
+  const [doctors, setDoctors] = useState([])
+  const [selectedDoctorId, setSelectedDoctorId] = useState('')
+  const [assigningDoctor, setAssigningDoctor] = useState(false)
+
+  // Doctor: Template assignment
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templates, setTemplates] = useState([])
   const [selectedTemplateId, setSelectedTemplateId] = useState('')
   const [assigningTemplate, setAssigningTemplate] = useState(false)
 
-  // Doctor review
+  // Doctor: Review
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviewForm, setReviewForm] = useState({
     health_analysis: '',
@@ -134,7 +139,6 @@ const PatientDetails = () => {
         const found = allPatients.find((p) => String(p.id) === String(id))
         if (found) {
           setPatient(found)
-          // Pre-fill review form if data exists
           if (found.health_analysis || found.prescription_summary) {
             setReviewForm({
               health_analysis: found.health_analysis || '',
@@ -144,6 +148,16 @@ const PatientDetails = () => {
         } else {
           setError('Patient not found.')
         }
+
+        // Admin: load doctors for assignment
+        if (isAdmin) {
+          const docRes = await getUsers(3)
+          const docList = Array.isArray(docRes) ? docRes : Array.isArray(docRes.data) ? docRes.data : []
+          setDoctors(docList.map((d) => ({
+            id: d.id,
+            name: decryptField(d.username || d.name || ''),
+          })))
+        }
       } catch (err) {
         setError(err?.message || 'Failed to load patient details.')
       } finally {
@@ -152,6 +166,8 @@ const PatientDetails = () => {
     }
     loadPatient()
   }, [id, isAdmin, isDoctor])
+
+  // ─── Activities ───
 
   const loadActivities = async () => {
     if (!id) return
@@ -190,7 +206,37 @@ const PatientDetails = () => {
     }
   }
 
-  // ─── Template Assignment (Doctor) ───
+  // ─── Admin: Assign Doctor (one-time only) ───
+
+  const handleAssignDoctor = async () => {
+    if (!selectedDoctorId) return
+    setAssigningDoctor(true)
+    try {
+      const res = await assignDoctorToPatient({
+        doctor_id: Number(selectedDoctorId),
+        patient_id: Number(patient.id),
+      })
+      if (Number(res.code) === 0) {
+        showSuccess('Doctor assigned successfully!')
+        const doc = doctors.find((d) => d.id === Number(selectedDoctorId))
+        setPatient((prev) => ({
+          ...prev,
+          doctor_id: Number(selectedDoctorId),
+          doctor_name: doc?.name || '',
+          profile_id: res.data?.id || res.data?.profile_id || prev.profile_id,
+        }))
+        setSelectedDoctorId('')
+      } else {
+        showError(res.message || 'Failed to assign doctor.')
+      }
+    } catch {
+      showError('Network error assigning doctor.')
+    } finally {
+      setAssigningDoctor(false)
+    }
+  }
+
+  // ─── Doctor: Assign Template ───
 
   const handleOpenTemplateModal = async () => {
     setShowTemplateModal(true)
@@ -234,7 +280,7 @@ const PatientDetails = () => {
     }
   }
 
-  // ─── Doctor Review ───
+  // ─── Doctor: Submit Review ───
 
   const handleSubmitReview = async (e) => {
     e.preventDefault()
@@ -269,6 +315,8 @@ const PatientDetails = () => {
     }
   }
 
+  // ─── Render ───
+
   if (loading) {
     return (
       <div className="suji-loading">
@@ -293,6 +341,7 @@ const PatientDetails = () => {
   const initials = `${(patient.patient_fname || '')[0] || ''}${(patient.patient_lname || '')[0] || ''}`.toUpperCase()
 
   const templateStatus = patient.template_status || (patient.template_id ? 'pending' : null)
+  const hasDoctorAssigned = !!(patient.doctor_id || patient.doctor_name)
 
   return (
     <CRow className="justify-content-center">
@@ -354,56 +403,9 @@ const PatientDetails = () => {
               <div className="detail-label">Patient Name</div>
               <div className="detail-value">{patient.patient_fname} {patient.patient_lname}</div>
             </div>
-            <div className="suji-detail-row">
-              <div className="detail-label">Age</div>
-              <div className="detail-value">{age || '-'}</div>
-            </div>
-            <div className="suji-detail-row">
-              <div className="detail-label">Gender</div>
-              <div className="detail-value">{patient.user_gender || '-'}</div>
-            </div>
-            <div className="suji-detail-row">
-              <div className="detail-label">Condition</div>
-              <div className="detail-value">
-                {patient.health_history
-                  ? <span dangerouslySetInnerHTML={{ __html: patient.health_history }} />
-                  : <span className="text-body-secondary">No condition recorded</span>}
-              </div>
-            </div>
-            <div className="suji-detail-row">
-              <div className="detail-label">Assigned Doctor</div>
-              <div className="detail-value">
-                {patient.doctor_name ? (
-                  <CBadge color="success" shape="rounded-pill">{patient.doctor_name}</CBadge>
-                ) : (
-                  <span className="text-body-secondary">Not assigned</span>
-                )}
-              </div>
-            </div>
-            {patient.template_name && (
-              <div className="suji-detail-row">
-                <div className="detail-label">Assigned Template</div>
-                <div className="detail-value">
-                  <CBadge color="primary" shape="rounded-pill">{patient.template_name}</CBadge>
-                </div>
-              </div>
-            )}
-            <div className="suji-detail-row">
-              <div className="detail-label">Date of Birth</div>
-              <div className="detail-value">{patient.p_dob?.split(' ')[0] || '-'}</div>
-            </div>
-            <div className="suji-detail-row">
-              <div className="detail-label">Contact</div>
-              <div className="detail-value">{displayContact}</div>
-            </div>
-            <div className="suji-detail-row">
-              <div className="detail-label">Country</div>
-              <div className="detail-value">{countryName || '-'}</div>
-            </div>
-
             {(isAdmin || isDoctor) && parentName && (
               <div className="suji-detail-row">
-                <div className="detail-label">Parent</div>
+                <div className="detail-label">Parent Name</div>
                 <div className="detail-value">
                   {isAdmin ? (
                     <CButton
@@ -423,7 +425,54 @@ const PatientDetails = () => {
                 </div>
               </div>
             )}
-
+            <div className="suji-detail-row">
+              <div className="detail-label">Age</div>
+              <div className="detail-value">{age || '-'}</div>
+            </div>
+            <div className="suji-detail-row">
+              <div className="detail-label">Gender</div>
+              <div className="detail-value">{patient.user_gender || '-'}</div>
+            </div>
+            <div className="suji-detail-row">
+              <div className="detail-label">Date of Birth</div>
+              <div className="detail-value">{patient.p_dob?.split(' ')[0] || '-'}</div>
+            </div>
+            <div className="suji-detail-row">
+              <div className="detail-label">Contact</div>
+              <div className="detail-value">{displayContact}</div>
+            </div>
+            <div className="suji-detail-row">
+              <div className="detail-label">Country</div>
+              <div className="detail-value">{countryName || '-'}</div>
+            </div>
+            <div className="suji-detail-row">
+              <div className="detail-label">Condition</div>
+              <div className="detail-value">
+                {patient.health_history
+                  ? <span dangerouslySetInnerHTML={{ __html: patient.health_history }} />
+                  : <span className="text-body-secondary">No condition recorded</span>}
+              </div>
+            </div>
+            <div className="suji-detail-row">
+              <div className="detail-label">Assigned Doctor</div>
+              <div className="detail-value">
+                {hasDoctorAssigned ? (
+                  <CBadge color="success" shape="rounded-pill">
+                    {patient.doctor_name || doctors.find((d) => d.id === patient.doctor_id)?.name || 'Assigned'}
+                  </CBadge>
+                ) : (
+                  <span className="text-body-secondary">Not assigned</span>
+                )}
+              </div>
+            </div>
+            {patient.template_name && (
+              <div className="suji-detail-row">
+                <div className="detail-label">Assigned Template</div>
+                <div className="detail-value">
+                  <CBadge color="primary" shape="rounded-pill">{patient.template_name}</CBadge>
+                </div>
+              </div>
+            )}
             {patient.about_patient && (
               <div className="suji-detail-row">
                 <div className="detail-label">About</div>
@@ -435,7 +484,69 @@ const PatientDetails = () => {
           </CCardBody>
         </CCard>
 
-        {/* ── Doctor Actions Card ── */}
+        {/* ── ADMIN: Doctor Assignment Section ── */}
+        {isAdmin && (
+          <CCard className="mb-4">
+            <CCardHeader>
+              <div className="d-flex align-items-center gap-2">
+                <CIcon icon={cilUserFollow} height={18} className="text-primary" />
+                <strong>Doctor Assignment</strong>
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              {hasDoctorAssigned ? (
+                <div>
+                  <div className="d-flex align-items-center gap-3 mb-2">
+                    <span className="fw-semibold">Assigned Doctor:</span>
+                    <CBadge color="success" shape="rounded-pill" style={{ fontSize: '0.9rem', padding: '6px 16px' }}>
+                      {patient.doctor_name || doctors.find((d) => d.id === patient.doctor_id)?.name || 'Doctor'}
+                    </CBadge>
+                  </div>
+                  <div className="text-body-secondary small">
+                    Doctor already assigned. A patient can only be assigned to one doctor.
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-body-secondary mb-3">
+                    Select a doctor to assign to <strong>{patient.patient_fname} {patient.patient_lname}</strong>.
+                    Once assigned, this cannot be changed.
+                  </p>
+                  <div className="d-flex align-items-end gap-3">
+                    <div style={{ minWidth: '250px' }}>
+                      <CFormLabel className="small fw-semibold">Select Doctor</CFormLabel>
+                      <CFormSelect
+                        value={selectedDoctorId}
+                        onChange={(e) => setSelectedDoctorId(e.target.value)}
+                      >
+                        <option value="">-- Choose a Doctor --</option>
+                        {doctors.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </CFormSelect>
+                    </div>
+                    <CButton
+                      color="primary"
+                      disabled={!selectedDoctorId || assigningDoctor}
+                      onClick={handleAssignDoctor}
+                    >
+                      {assigningDoctor ? <CSpinner size="sm" /> : (
+                        <>
+                          <CIcon icon={cilUserFollow} className="me-1" />
+                          Assign Doctor
+                        </>
+                      )}
+                    </CButton>
+                  </div>
+                </div>
+              )}
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* ── DOCTOR: Actions Card ── */}
         {isDoctor && (
           <CCard className="mb-4 border-primary">
             <CCardHeader>
@@ -446,16 +557,10 @@ const PatientDetails = () => {
             </CCardHeader>
             <CCardBody>
               <div className="d-flex flex-wrap gap-3">
-                {/* Assign Template Button */}
-                <CButton
-                  color="primary"
-                  onClick={handleOpenTemplateModal}
-                >
+                <CButton color="primary" onClick={handleOpenTemplateModal}>
                   <CIcon icon={cilNotes} className="me-1" />
                   {patient.template_name ? 'Change Template' : 'Assign Template'}
                 </CButton>
-
-                {/* Review / Summary Button */}
                 <CButton
                   color="success"
                   onClick={() => setShowReviewForm(!showReviewForm)}
@@ -465,14 +570,14 @@ const PatientDetails = () => {
                 </CButton>
               </div>
 
-              {/* Doctor Summary Display */}
+              {/* Current Review Display */}
               {(patient.health_analysis || patient.prescription_summary) && !showReviewForm && (
                 <div className="mt-4">
                   <h6 className="fw-bold mb-3">Current Review</h6>
                   {patient.health_analysis && (
                     <div className="mb-3">
                       <div className="text-body-secondary small mb-1">Health Analysis / Summary</div>
-                      <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)' }}>
+                      <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)', whiteSpace: 'pre-line' }}>
                         {patient.health_analysis}
                       </div>
                     </div>
@@ -480,7 +585,7 @@ const PatientDetails = () => {
                   {patient.prescription_summary && (
                     <div>
                       <div className="text-body-secondary small mb-1">Prescription / Precautions</div>
-                      <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)' }}>
+                      <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)', whiteSpace: 'pre-line' }}>
                         {patient.prescription_summary}
                       </div>
                     </div>
@@ -491,7 +596,7 @@ const PatientDetails = () => {
           </CCard>
         )}
 
-        {/* ── Doctor Review Form ── */}
+        {/* ── DOCTOR: Review Form ── */}
         {isDoctor && showReviewForm && (
           <CCard className="mb-4 border-success">
             <CCardHeader className="d-flex justify-content-between align-items-center">
@@ -503,7 +608,7 @@ const PatientDetails = () => {
             <CCardBody>
               <form onSubmit={handleSubmitReview}>
                 <div className="mb-3">
-                  <CFormLabel>Health Analysis / Doctor Summary</CFormLabel>
+                  <CFormLabel>Doctor Summary</CFormLabel>
                   <CFormTextarea
                     value={reviewForm.health_analysis}
                     onChange={(e) => setReviewForm({ ...reviewForm, health_analysis: e.target.value })}
@@ -512,7 +617,7 @@ const PatientDetails = () => {
                   />
                 </div>
                 <div className="mb-3">
-                  <CFormLabel>Prescription Summary / Precautions</CFormLabel>
+                  <CFormLabel>Precautions &amp; Recommendations</CFormLabel>
                   <CFormTextarea
                     value={reviewForm.prescription_summary}
                     onChange={(e) => setReviewForm({ ...reviewForm, prescription_summary: e.target.value })}
@@ -538,7 +643,7 @@ const PatientDetails = () => {
           </CCard>
         )}
 
-        {/* ── Parent: Doctor Review Display ── */}
+        {/* ── PARENT: Doctor Review Display ── */}
         {isParent && (patient.health_analysis || patient.prescription_summary) && (
           <CCard className="mb-4 border-success">
             <CCardHeader>
@@ -550,7 +655,7 @@ const PatientDetails = () => {
             <CCardBody>
               {patient.health_analysis && (
                 <div className="mb-3">
-                  <div className="text-body-secondary small mb-1">Health Analysis / Summary</div>
+                  <div className="text-body-secondary small mb-1">Doctor Summary</div>
                   <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)', whiteSpace: 'pre-line' }}>
                     {patient.health_analysis}
                   </div>
@@ -558,7 +663,7 @@ const PatientDetails = () => {
               )}
               {patient.prescription_summary && (
                 <div>
-                  <div className="text-body-secondary small mb-1">Prescription / Precautions</div>
+                  <div className="text-body-secondary small mb-1">Precautions &amp; Recommendations</div>
                   <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)', whiteSpace: 'pre-line' }}>
                     {patient.prescription_summary}
                   </div>
@@ -568,7 +673,7 @@ const PatientDetails = () => {
           </CCard>
         )}
 
-        {/* ── Template Assignment Modal ── */}
+        {/* ── Template Assignment Modal (Doctor) ── */}
         <CModal visible={showTemplateModal} onClose={() => setShowTemplateModal(false)}>
           <CModalHeader>
             <CModalTitle>Assign Template</CModalTitle>
@@ -610,7 +715,7 @@ const PatientDetails = () => {
           </CModalFooter>
         </CModal>
 
-        {/* Activities Section */}
+        {/* ── Activities Section ── */}
         {!isAdmin && showForm && (
           <SchedulerForm
             patientId={patient.id}

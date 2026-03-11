@@ -17,7 +17,6 @@ import {
   CAlert,
   CBadge,
   CFormInput,
-  CFormSelect,
   CPagination,
   CPaginationItem,
 } from '@coreui/react'
@@ -29,8 +28,6 @@ import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
-import { assignDoctorToPatient } from '../../services/patientProfileService'
-import { useToast } from '../../components/ToastContext'
 import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
@@ -45,7 +42,6 @@ function calculateAge(dob) {
 
 const Patients = () => {
   const navigate = useNavigate()
-  const { showSuccess, showError } = useToast()
   const roleId = getRoleId()
   const isAdmin = roleId === 2
   const isDoctor = roleId === 3
@@ -53,8 +49,6 @@ const Patients = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [countries, setCountries] = useState([])
-  const [doctors, setDoctors] = useState([])
-  const [assigningDoctor, setAssigningDoctor] = useState({}) // { patientId: true }
 
   const {
     paginatedData,
@@ -74,14 +68,13 @@ const Patients = () => {
         setCountries(countryData)
 
         if (isAdmin) {
-          // Load doctors list for assignment dropdown
+          // Load doctors for name resolution
           const docRes = await getUsers(3)
           const docList = Array.isArray(docRes) ? docRes : Array.isArray(docRes.data) ? docRes.data : []
-          setDoctors(docList.map((d) => ({
-            id: d.id,
-            name: decryptField(d.username || d.name || ''),
-            email: decryptSafe(d.emailid || d.email || ''),
-          })))
+          const doctorMap = {}
+          docList.forEach((d) => {
+            doctorMap[d.id] = decryptField(d.username || d.name || '')
+          })
 
           // Load all patients with parent info
           const userRes = await getUsers(1)
@@ -96,15 +89,12 @@ const Patients = () => {
             ...p,
             _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
             _parentEmail: decryptSafe(p._parent?.emailid || p._parent?.email || ''),
-            _doctorName: p.doctor_name ? decryptField(p.doctor_name) : '',
-            _doctorId: p.doctor_id || null,
+            _doctorName: p.doctor_id ? (doctorMap[p.doctor_id] || p.doctor_name || '') : '',
           }))
           setPatients(enriched)
         } else if (isDoctor) {
           // Doctor sees only assigned patients
           const umId = getUmId()
-          // Try to get patients assigned to this doctor
-          // For now, get all patients and filter by doctor_id
           const userRes = await getUsers(1)
           let allUsers = []
           if (Array.isArray(userRes)) allUsers = userRes
@@ -144,34 +134,12 @@ const Patients = () => {
     return display
   }
 
-  const handleAssignDoctor = async (patient, doctorId) => {
-    if (!doctorId) return
-    setAssigningDoctor((prev) => ({ ...prev, [patient.id]: true }))
-    try {
-      const res = await assignDoctorToPatient({
-        doctor_id: Number(doctorId),
-        patient_id: Number(patient.id),
-      })
-      if (Number(res.code) === 0) {
-        showSuccess('Doctor assigned successfully!')
-        // Update local state
-        const doc = doctors.find((d) => d.id === Number(doctorId))
-        setPatients((prev) =>
-          prev.map((p) =>
-            p.id === patient.id
-              ? { ...p, _doctorId: Number(doctorId), _doctorName: doc?.name || '', doctor_id: Number(doctorId) }
-              : p,
-          ),
-        )
-      } else {
-        showError(res.message || 'Failed to assign doctor.')
-      }
-    } catch {
-      showError('Network error assigning doctor.')
-    } finally {
-      setAssigningDoctor((prev) => ({ ...prev, [patient.id]: false }))
-    }
-  }
+  // Calculate column count for empty state
+  let colCount = 8 // base: #, Name, Relationship, DOB, Age, Gender, Contact, Actions
+  if (isAdmin || isDoctor) colCount++ // Parent column
+  if (isAdmin) colCount++ // Assigned Doctor column
+  if (isDoctor) colCount++ // Template Status column
+  if (!isAdmin && !isDoctor) colCount++ // Template column for parent
 
   return (
     <CRow>
@@ -225,15 +193,14 @@ const Patients = () => {
                       <CTableHeaderCell>Contact</CTableHeaderCell>
                       {isAdmin && <CTableHeaderCell>Assigned Doctor</CTableHeaderCell>}
                       {isDoctor && <CTableHeaderCell>Template Status</CTableHeaderCell>}
-                      {/* Parent sees template info */}
                       {!isAdmin && !isDoctor && <CTableHeaderCell>Template</CTableHeaderCell>}
-                      <CTableHeaderCell style={{ width: '100px', textAlign: 'center' }}>Actions</CTableHeaderCell>
+                      <CTableHeaderCell style={{ width: '80px', textAlign: 'center' }}>Action</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
                   <CTableBody>
                     {paginatedData.length === 0 ? (
                       <CTableRow>
-                        <CTableDataCell colSpan={isAdmin ? 10 : 9} className="text-center">
+                        <CTableDataCell colSpan={colCount} className="text-center">
                           <div className="suji-empty-state">
                             {isDoctor ? 'No patients assigned to you yet.' : 'No patients found.'}
                           </div>
@@ -279,46 +246,15 @@ const Patients = () => {
                             </CTableDataCell>
                             <CTableDataCell>{renderContact(contact, p.country_id)}</CTableDataCell>
 
-                            {/* Admin: Assign Doctor dropdown */}
+                            {/* Admin: Show assigned doctor name (read-only) */}
                             {isAdmin && (
                               <CTableDataCell>
-                                {assigningDoctor[p.id] ? (
-                                  <CSpinner size="sm" color="primary" />
-                                ) : p._doctorName ? (
-                                  <div>
-                                    <CBadge color="success" shape="rounded-pill" className="mb-1">
-                                      {p._doctorName}
-                                    </CBadge>
-                                    <div>
-                                      <CFormSelect
-                                        size="sm"
-                                        style={{ width: '160px', fontSize: '0.75rem' }}
-                                        value=""
-                                        onChange={(e) => handleAssignDoctor(p, e.target.value)}
-                                      >
-                                        <option value="">Reassign...</option>
-                                        {doctors.map((d) => (
-                                          <option key={d.id} value={d.id}>
-                                            {d.name}
-                                          </option>
-                                        ))}
-                                      </CFormSelect>
-                                    </div>
-                                  </div>
+                                {p._doctorName ? (
+                                  <CBadge color="success" shape="rounded-pill">
+                                    {p._doctorName}
+                                  </CBadge>
                                 ) : (
-                                  <CFormSelect
-                                    size="sm"
-                                    style={{ width: '160px' }}
-                                    value=""
-                                    onChange={(e) => handleAssignDoctor(p, e.target.value)}
-                                  >
-                                    <option value="">Assign Doctor</option>
-                                    {doctors.map((d) => (
-                                      <option key={d.id} value={d.id}>
-                                        {d.name}
-                                      </option>
-                                    ))}
-                                  </CFormSelect>
+                                  <span className="text-body-secondary small">Not assigned</span>
                                 )}
                               </CTableDataCell>
                             )}
