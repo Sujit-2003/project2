@@ -19,6 +19,7 @@ import {
   CFormInput,
   CPagination,
   CPaginationItem,
+  CTooltip,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilChildFriendly } from '@coreui/icons'
@@ -90,7 +91,7 @@ const Patients = () => {
             ...p,
             _parentName: decryptField(p._parent?.username || p._parent?.name || ''),
             _parentEmail: decryptSafe(p._parent?.emailid || p._parent?.email || ''),
-            _doctorName: p.doctor_id ? (doctorMap[p.doctor_id] || p.doctor_name || '') : '',
+            _doctorName: p.doctor_id ? (doctorMap[p.doctor_id] || (p.doctor_name ? decryptField(p.doctor_name) : '') || '') : '',
           }))
           setPatients(enriched)
         } else if (isDoctor) {
@@ -119,7 +120,7 @@ const Patients = () => {
                       id: pId, // normalize id for the table and click action
                       profile_id: profileRes.data.profile_id || profileRes.data.id,
                       doctor_id: profileRes.data.doctor_id,
-                      doctor_name: profileRes.data.doctor_name,
+                      doctor_name: profileRes.data.doctor_name ? decryptField(profileRes.data.doctor_name) : null,
                       template_id: profileRes.data.template_id,
                       template_name: profileRes.data.template_name,
                       template_status: profileRes.data.template_status,
@@ -196,7 +197,7 @@ const Patients = () => {
   }
 
   // Calculate column count for empty state
-  let colCount = isDoctor ? 6 : (isAdmin ? 10 : 9)
+  let colCount = isDoctor ? 7 : (isAdmin ? 10 : 9)
 
   return (
     <CRow>
@@ -373,28 +374,19 @@ const Patients = () => {
                             )}
 
                             <CTableDataCell className="text-center">
-                              {isDoctor ? (
-                                <CButton
-                                  color="primary"
-                                  size="sm"
-                                  onClick={() => navigate(`/patients/${p.id || p.patient_id}`)}
-                                >
-                                  View Details
-                                </CButton>
-                              ) : (
+                              <CTooltip content="View Patient Details">
                                 <CButton
                                   color="primary"
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => navigate(`/patients/${p.id || p.patient_id}`)}
-                                  title="View Details"
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                     <circle cx="12" cy="12" r="3"/>
                                   </svg>
                                 </CButton>
-                              )}
+                              </CTooltip>
                             </CTableDataCell>
                           </CTableRow>
                         )

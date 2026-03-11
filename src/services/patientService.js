@@ -1,6 +1,7 @@
 import environment from '../config/environment'
 import { getAuthHeaders, safeJson } from './authService'
 import { getPatientProfile } from './patientProfileService'
+import { decryptField } from './encryptionService'
 
 const API_URL = environment.apiBaseUrl
 
@@ -31,7 +32,7 @@ async function enrichWithProfile(patient) {
         ...patient,
         profile_id: p.profile_id || p.id || null,
         doctor_id: p.doctor_id || null,
-        doctor_name: p.doctor_name || null,
+        doctor_name: p.doctor_name ? decryptField(p.doctor_name) : null,
         template_id: p.template_id || null,
         template_name: p.template_name || null,
         template_status: p.template_status || null,
