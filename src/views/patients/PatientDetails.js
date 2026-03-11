@@ -37,8 +37,9 @@ import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
 import { assignDoctorToPatient, assignTemplateToPatient, submitDoctorReview, getPatientProfile } from '../../services/patientProfileService'
-import { getTemplates } from '../../services/questionnaireService'
+import { getTemplates, getQuestions, getQuestionOptions } from '../../services/questionnaireService'
 import { getTemplateMap } from '../../services/patientService'
+import { getAnswers } from '../../services/answerService'
 import { useToast } from '../../components/ToastContext'
 
 function calculateAge(dob) {
@@ -369,7 +370,21 @@ const PatientDetails = () => {
   const age = calculateAge(patient.p_dob)
   const initials = `${(patient.patient_fname || '')[0] || ''}${(patient.patient_lname || '')[0] || ''}`.toUpperCase()
 
-  const templateStatus = patient.template_status || (patient.template_id ? 'pending' : null)
+  const submittedAnswers = getAnswers(patient.id)
+  const hasSubmitted = !!(submittedAnswers && submittedAnswers.status === 'submitted')
+
+  // Derive template status: submitted answers take priority over derived status
+  let templateStatus = patient.template_status || null
+  if (!templateStatus && patient.template_id) {
+    templateStatus = 'pending'
+  }
+  if (hasSubmitted && templateStatus === 'pending') {
+    templateStatus = 'submitted'
+  }
+  if (patient.health_analysis || patient.prescription_summary) {
+    templateStatus = 'reviewed'
+  }
+
   const hasDoctorAssigned = !!(patient.doctor_id || patient.doctor_name)
 
   return (
@@ -494,11 +509,25 @@ const PatientDetails = () => {
                 )}
               </div>
             </div>
-            {patient.template_name && (
+            {(patient.template_name || patient.template_id) && (
               <div className="suji-detail-row">
                 <div className="detail-label">Assigned Template</div>
-                <div className="detail-value">
-                  <CBadge color="primary" shape="rounded-pill">{patient.template_name}</CBadge>
+                <div className="detail-value d-flex align-items-center gap-2 flex-wrap">
+                  <CBadge color="primary" shape="rounded-pill">
+                    {patient.template_name || `Template #${patient.template_id}`}
+                  </CBadge>
+                  {templateStatus && (
+                    <CBadge
+                      color={
+                        templateStatus === 'reviewed' ? 'success'
+                          : templateStatus === 'submitted' ? 'info'
+                            : 'warning'
+                      }
+                      shape="rounded-pill"
+                    >
+                      {templateStatus.charAt(0).toUpperCase() + templateStatus.slice(1)}
+                    </CBadge>
+                  )}
                 </div>
               </div>
             )}
@@ -512,6 +541,95 @@ const PatientDetails = () => {
             )}
           </CCardBody>
         </CCard>
+
+        {/* ── PARENT: Fill Template Section ── */}
+        {isParent && patient.template_id && (
+          <CCard className="mb-4 border-primary">
+            <CCardHeader>
+              <div className="d-flex align-items-center gap-2">
+                <CIcon icon={cilNotes} height={18} className="text-primary" />
+                <strong>Questionnaire</strong>
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              {templateStatus === 'reviewed' ? (
+                <div>
+                  <CBadge color="success" shape="rounded-pill" className="mb-2" style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
+                    Reviewed by Doctor
+                  </CBadge>
+                  <p className="text-body-secondary small mb-0">
+                    Your doctor has reviewed the template and provided their analysis below.
+                  </p>
+                </div>
+              ) : hasSubmitted ? (
+                <div>
+                  <CBadge color="info" shape="rounded-pill" className="mb-2" style={{ fontSize: '0.85rem', padding: '6px 14px' }}>
+                    Submitted
+                  </CBadge>
+                  <p className="text-body-secondary small mb-2">
+                    Your answers have been submitted. The doctor will review them shortly.
+                  </p>
+                  <CButton
+                    color="primary"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/patients/${patient.id}/fill-template`)}
+                  >
+                    <CIcon icon={cilPencil} className="me-1" />
+                    Update Answers
+                  </CButton>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-body-secondary mb-3">
+                    Your doctor has assigned a questionnaire template. Please fill it out so the doctor can review your responses.
+                  </p>
+                  <CButton
+                    color="primary"
+                    onClick={() => navigate(`/patients/${patient.id}/fill-template`)}
+                  >
+                    <CIcon icon={cilNotes} className="me-1" />
+                    Fill Template
+                  </CButton>
+                </div>
+              )}
+            </CCardBody>
+          </CCard>
+        )}
+
+        {/* ── DOCTOR/ADMIN: View Submitted Answers ── */}
+        {(isDoctor || isAdmin) && hasSubmitted && submittedAnswers && (
+          <CCard className="mb-4 border-info">
+            <CCardHeader>
+              <div className="d-flex align-items-center justify-content-between">
+                <div className="d-flex align-items-center gap-2">
+                  <CIcon icon={cilNotes} height={18} className="text-info" />
+                  <strong>Submitted Answers</strong>
+                </div>
+                <CBadge color="info" shape="rounded-pill">
+                  Submitted {submittedAnswers.submitted_at ? new Date(submittedAnswers.submitted_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : ''}
+                </CBadge>
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              {submittedAnswers.answers.map((a, idx) => (
+                <div key={a.question_id} className={idx < submittedAnswers.answers.length - 1 ? 'mb-3 pb-3 border-bottom' : ''}>
+                  <div className="d-flex align-items-start gap-2">
+                    <CBadge color="secondary" shape="rounded-pill" style={{ minWidth: '24px', textAlign: 'center', marginTop: '2px' }}>
+                      {idx + 1}
+                    </CBadge>
+                    <div>
+                      <div className="fw-semibold">{a.question}</div>
+                      <div className="mt-1">
+                        <CBadge color="primary" shape="rounded-pill">{a.answer}</CBadge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CCardBody>
+          </CCard>
+        )}
 
         {/* ── ADMIN: Doctor Assignment Section ── */}
         {isAdmin && (

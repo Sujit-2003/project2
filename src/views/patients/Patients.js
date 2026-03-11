@@ -30,6 +30,7 @@ import { decryptField, decryptSafe } from '../../services/encryptionService'
 import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
 import { getDoctorPatients, getPatientProfile } from '../../services/patientProfileService'
+import { hasSubmittedAnswers } from '../../services/answerService'
 import useTableControls from '../../hooks/useTableControls'
 
 function calculateAge(dob) {
@@ -131,6 +132,8 @@ const Patients = () => {
               if (!templateStatus && p.template_id) {
                 if (p.health_analysis || p.prescription_summary) {
                   templateStatus = 'reviewed'
+                } else if (hasSubmittedAnswers(pId)) {
+                  templateStatus = 'submitted'
                 } else {
                   templateStatus = 'pending'
                 }
@@ -163,7 +166,13 @@ const Patients = () => {
                     // Derive template_status: backend doesn't return it
                     let templateStatus = null
                     if (prof.template_id) {
-                      templateStatus = (prof.health_analysis || prof.prescription_summary) ? 'reviewed' : 'pending'
+                      if (prof.health_analysis || prof.prescription_summary) {
+                        templateStatus = 'reviewed'
+                      } else if (hasSubmittedAnswers(p.id)) {
+                        templateStatus = 'submitted'
+                      } else {
+                        templateStatus = 'pending'
+                      }
                     }
                     return {
                       ...p,

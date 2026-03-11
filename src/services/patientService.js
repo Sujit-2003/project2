@@ -3,6 +3,7 @@ import { getAuthHeaders, safeJson } from './authService'
 import { getPatientProfile } from './patientProfileService'
 import { decryptField } from './encryptionService'
 import { getTemplates } from './questionnaireService'
+import { hasSubmittedAnswers } from './answerService'
 
 // Shared template map cache (refreshed per page load)
 let _templateMap = null
@@ -53,7 +54,13 @@ async function enrichWithProfile(patient) {
       // Derive template_status: backend doesn't return it
       let templateStatus = null
       if (p.template_id) {
-        templateStatus = (p.health_analysis || p.prescription_summary) ? 'reviewed' : 'pending'
+        if (p.health_analysis || p.prescription_summary) {
+          templateStatus = 'reviewed'
+        } else if (hasSubmittedAnswers(patient.id)) {
+          templateStatus = 'submitted'
+        } else {
+          templateStatus = 'pending'
+        }
       }
       return {
         ...patient,

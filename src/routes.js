@@ -19,6 +19,7 @@ const ChangePassword = React.lazy(() => import('./views/pages/ChangePassword'))
 const Charts = React.lazy(() => import('./views/charts/Charts'))
 const Templates = React.lazy(() => import('./views/questionnaire/Templates'))
 const TemplateDetails = React.lazy(() => import('./views/questionnaire/TemplateDetails'))
+const FillTemplate = React.lazy(() => import('./views/patients/FillTemplate'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
@@ -41,6 +42,7 @@ const routes = [
   // All roles
   { path: '/patients', name: 'Patients', element: Patients, exact: true },
   { path: '/patients/add', name: 'Add Patient', element: AddPatient },
+  { path: '/patients/:id/fill-template', name: 'Fill Template', element: FillTemplate },
   { path: '/patients/:id', name: 'Patient Details', element: PatientDetails },
   { path: '/change-password', name: 'Change Password', element: ChangePassword },
 ]
