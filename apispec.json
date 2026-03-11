@@ -1,0 +1,1503 @@
+{
+  "definitions": {},
+  "info": {
+    "description": "API documentation for DigitalArt Backend",
+    "title": "DigitalArt API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/activity": {
+      "post": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "actity_datetime": {
+                  "example": "07:00:00",
+                  "type": "string"
+                },
+                "actity_desc": {
+                  "example": "30 minutes walking",
+                  "type": "string"
+                },
+                "actity_name": {
+                  "example": "Morning Exercise",
+                  "type": "string"
+                },
+                "actity_status": {
+                  "example": 1,
+                  "type": "integer"
+                },
+                "actity_type": {
+                  "example": "Medicine",
+                  "type": "string"
+                },
+                "days_flag": {
+                  "example": [
+                    "0"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "patient_id": {
+                  "example": 101,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity created successfully"
+          }
+        },
+        "summary": "Add Patient Activity",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
+    "/api/activity/{activity_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 5,
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity deleted successfully"
+          }
+        },
+        "summary": "Delete Activity",
+        "tags": [
+          "Activity"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 1,
+            "in": "path",
+            "name": "activity_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "actity_datetime": {
+                  "example": "18:00:00",
+                  "type": "string"
+                },
+                "actity_desc": {
+                  "example": "20 minutes walking",
+                  "type": "string"
+                },
+                "actity_name": {
+                  "example": "Evening Walk",
+                  "type": "string"
+                },
+                "actity_status": {
+                  "example": 1,
+                  "type": "integer"
+                },
+                "actity_type": {
+                  "example": "Physical Exercise",
+                  "type": "string"
+                },
+                "days_flag": {
+                  "example": [
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity updated successfully"
+          }
+        },
+        "summary": "Update Activity",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
+    "/api/activity/{patient_id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 101,
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of patient activities"
+          }
+        },
+        "summary": "Get Patient Activities",
+        "tags": [
+          "Activity"
+        ]
+      }
+    },
+    "/api/add-symptom": {
+      "post": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "severity_level": {
+                  "enum": [
+                    "Mild",
+                    "Moderate",
+                    "Severe"
+                  ],
+                  "type": "string"
+                },
+                "symptom_name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "symptom_name",
+                "severity_level"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Symptom added"
+          }
+        },
+        "summary": "Add Symptom",
+        "tags": [
+          "Symptom"
+        ]
+      }
+    },
+    "/api/change-password/{user_id}": {
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "schema": {
+              "properties": {
+                "confirm_password": {
+                  "type": "string"
+                },
+                "new_password": {
+                  "type": "string"
+                },
+                "old_password": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "old_password",
+                "new_password",
+                "confirm_password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password changed successfully"
+          }
+        },
+        "summary": "Change User Password",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/doctor/{doctor_id}/patients": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 3,
+            "in": "path",
+            "name": "doctor_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of patients assigned to doctor"
+          }
+        },
+        "summary": "Get Patient Profiles By Doctor",
+        "tags": [
+          "Patient Profile"
+        ]
+      }
+    },
+    "/api/faqs": {
+      "get": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success or Failure"
+          }
+        },
+        "summary": "Get All FAQs",
+        "tags": [
+          "FAQ"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "question": {
+                  "type": "string"
+                },
+                "response": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success or Failure"
+          }
+        },
+        "summary": "Create FAQ",
+        "tags": [
+          "FAQ"
+        ]
+      }
+    },
+    "/api/faqs/{faq_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "faq_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success or Failure"
+          }
+        },
+        "summary": "Get FAQ By ID",
+        "tags": [
+          "FAQ"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "faq_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "question": {
+                  "type": "string"
+                },
+                "response": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success or Failure"
+          }
+        },
+        "summary": "Update FAQ",
+        "tags": [
+          "FAQ"
+        ]
+      }
+    },
+    "/api/get-countries": {
+      "get": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of countries"
+          }
+        },
+        "summary": "Get All Countries",
+        "tags": [
+          "Country"
+        ]
+      }
+    },
+    "/api/get-symptoms": {
+      "get": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of symptoms"
+          }
+        },
+        "summary": "Get All Symptoms",
+        "tags": [
+          "Symptom"
+        ]
+      }
+    },
+    "/api/login": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "emailid": {
+                  "example": "user@gmail.com",
+                  "type": "string"
+                },
+                "password": {
+                  "example": "User@123",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "emailid",
+                "password"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login Response"
+          }
+        },
+        "summary": "User Login",
+        "tags": [
+          "Login"
+        ]
+      }
+    },
+    "/api/masterdata": {
+      "get": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Master data fetched successfully"
+          }
+        },
+        "summary": "Get Master Data",
+        "tags": [
+          "MasterData"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "about": {
+                  "example": "About company details",
+                  "type": "string"
+                },
+                "address": {
+                  "example": "Hyderabad",
+                  "type": "string"
+                },
+                "cancellation": {
+                  "example": "Updated cancellation policy",
+                  "type": "string"
+                },
+                "companyname": {
+                  "example": "DigitalArt Pvt Ltd",
+                  "type": "string"
+                },
+                "contactnumber": {
+                  "example": "9876543210",
+                  "type": "string"
+                },
+                "emailid": {
+                  "example": "info@digitalart.com",
+                  "type": "string"
+                },
+                "privacy": {
+                  "example": "Updated privacy policy",
+                  "type": "string"
+                },
+                "reimbursment": {
+                  "example": "Updated reimbursement policy",
+                  "type": "string"
+                },
+                "terms": {
+                  "example": "Updated terms and conditions",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Master data updated successfully"
+          }
+        },
+        "summary": "Update Master Data",
+        "tags": [
+          "MasterData"
+        ]
+      }
+    },
+    "/api/masterdata/{master_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "master_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Master data fetched successfully"
+          }
+        },
+        "summary": "Get Master Data By ID",
+        "tags": [
+          "MasterData"
+        ]
+      }
+    },
+    "/api/patient-profile": {
+      "post": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "doctor_id": {
+                  "example": 3,
+                  "type": "integer"
+                },
+                "patient_id": {
+                  "example": 10,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Doctor assignment response"
+          }
+        },
+        "summary": "Assign Doctor to Patient",
+        "tags": [
+          "Patient Profile"
+        ]
+      }
+    },
+    "/api/patient-profile/{profile_id}/analysis": {
+      "put": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 1,
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "health_analysis": {
+                  "example": "Patient recovering well",
+                  "type": "string"
+                },
+                "prescription_summary": {
+                  "example": "Take medicine twice daily",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient analysis updated successfully"
+          }
+        },
+        "summary": "Update Prescription and Health Analysis",
+        "tags": [
+          "Patient Profile"
+        ]
+      }
+    },
+    "/api/patient-profile/{profile_id}/template": {
+      "put": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 1,
+            "in": "path",
+            "name": "profile_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "template_id": {
+                  "example": 5,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template assigned successfully"
+          }
+        },
+        "summary": "Assign Template to Patient",
+        "tags": [
+          "Patient Profile"
+        ]
+      }
+    },
+    "/api/patient/{patient_id}/profile": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 10,
+            "in": "path",
+            "name": "patient_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient profile details"
+          }
+        },
+        "summary": "Get Patient Profile",
+        "tags": [
+          "Patient Profile"
+        ]
+      }
+    },
+    "/api/patients": {
+      "post": {
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "about_patient": {
+                  "example": "General checkup",
+                  "type": "string"
+                },
+                "contact_number": {
+                  "example": "9876543210",
+                  "type": "string"
+                },
+                "country_id": {
+                  "example": 91,
+                  "type": "integer"
+                },
+                "health_history": {
+                  "example": "None",
+                  "type": "string"
+                },
+                "p_dob": {
+                  "example": "2020-01-01 10:30:00",
+                  "type": "string"
+                },
+                "p_relationship": {
+                  "example": "Self",
+                  "type": "string"
+                },
+                "patient_fname": {
+                  "example": "John",
+                  "type": "string"
+                },
+                "patient_lname": {
+                  "example": "Doe",
+                  "type": "string"
+                },
+                "um_id": {
+                  "example": 1,
+                  "type": "integer"
+                },
+                "user_gender": {
+                  "example": "Male",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "patient_fname",
+                "patient_lname",
+                "p_relationship",
+                "p_dob",
+                "user_gender",
+                "about_patient",
+                "health_history",
+                "um_id",
+                "contact_number",
+                "country_id"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient added successfully"
+          }
+        },
+        "summary": "Add Patient",
+        "tags": [
+          "Patient"
+        ]
+      }
+    },
+    "/api/patients/{um_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "um_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of patients"
+          }
+        },
+        "summary": "Get Patients by UM ID",
+        "tags": [
+          "Patient"
+        ]
+      }
+    },
+    "/api/question": {
+      "post": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "description": {
+                  "example": "Check patient temperature symptoms",
+                  "type": "string"
+                },
+                "question": {
+                  "example": "Do you have fever?",
+                  "type": "string"
+                },
+                "template_id": {
+                  "example": 1,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Question added successfully"
+          }
+        },
+        "summary": "Add Question",
+        "tags": [
+          "Question"
+        ]
+      }
+    },
+    "/api/question/options": {
+      "post": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "options": {
+                  "items": {
+                    "properties": {
+                      "opt_hint": {
+                        "example": "Patient condition improving",
+                        "type": "string"
+                      },
+                      "opt_text": {
+                        "example": "Feeling Better",
+                        "type": "string"
+                      },
+                      "opt_weightge": {
+                        "example": 1,
+                        "type": "number"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "q_id": {
+                  "example": 10,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Question options inserted successfully"
+          }
+        },
+        "summary": "Add Question Options",
+        "tags": [
+          "Question Options"
+        ]
+      }
+    },
+    "/api/question/options/{option_id}": {
+      "put": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 10,
+            "in": "path",
+            "name": "option_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "opt_hint": {
+                  "example": "Patient improving",
+                  "type": "string"
+                },
+                "opt_text": {
+                  "example": "Feeling Better",
+                  "type": "string"
+                },
+                "opt_weightge": {
+                  "example": 1,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Option updated successfully"
+          }
+        },
+        "summary": "Update Question Option",
+        "tags": [
+          "Question Options"
+        ]
+      }
+    },
+    "/api/question/{q_id}/options": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 5,
+            "in": "path",
+            "name": "q_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Options list"
+          }
+        },
+        "summary": "Get Question Options",
+        "tags": [
+          "Question Options"
+        ]
+      }
+    },
+    "/api/question/{question_id}": {
+      "put": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 5,
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "description": {
+                  "example": "Patient health condition",
+                  "type": "string"
+                },
+                "question": {
+                  "example": "How are you feeling today?",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Question updated successfully"
+          }
+        },
+        "summary": "Update Question",
+        "tags": [
+          "Question"
+        ]
+      }
+    },
+    "/api/question/{template_id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 1,
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of questions"
+          }
+        },
+        "summary": "Get Questions By Template",
+        "tags": [
+          "Question"
+        ]
+      }
+    },
+    "/api/register": {
+      "post": {
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "cnumber": {
+                  "example": 9876543210,
+                  "type": "string"
+                },
+                "countryid": {
+                  "example": 1,
+                  "type": "integer"
+                },
+                "emailid": {
+                  "example": "john@gmail.com",
+                  "type": "string"
+                },
+                "roleid": {
+                  "example": 2,
+                  "type": "integer"
+                },
+                "upassword": {
+                  "example": "John@123",
+                  "type": "string"
+                },
+                "username": {
+                  "example": "John",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "username",
+                "emailid",
+                "upassword",
+                "cnumber",
+                "roleid",
+                "countryid"
+              ],
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Registration response"
+          }
+        },
+        "summary": "Register New User",
+        "tags": [
+          "User"
+        ]
+      }
+    },
+    "/api/reminders/{user_id}/{role_id}": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 45,
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "example": 2,
+            "in": "path",
+            "name": "role_id",
+            "required": true,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of activity reminders",
+            "schema": {
+              "items": {
+                "properties": {
+                  "activity": {
+                    "example": "Morning Exercise",
+                    "type": "string"
+                  },
+                  "activity_type": {
+                    "example": "Medicine",
+                    "type": "string"
+                  },
+                  "description": {
+                    "example": "30 minutes walking",
+                    "type": "string"
+                  },
+                  "message": {
+                    "example": "Upcoming activity in 10 minutes: Morning Exercise",
+                    "type": "string"
+                  },
+                  "patient_id": {
+                    "example": 101,
+                    "type": "integer"
+                  },
+                  "time": {
+                    "example": "07:00",
+                    "type": "string"
+                  },
+                  "type": {
+                    "example": "early",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            }
+          }
+        },
+        "summary": "Get Activity Reminders",
+        "tags": [
+          "Reminders"
+        ]
+      }
+    },
+    "/api/symptoms/severity/{severity_level}": {
+      "get": {
+        "parameters": [
+          {
+            "enum": [
+              "Mild",
+              "Moderate",
+              "Severe"
+            ],
+            "in": "path",
+            "name": "severity_level",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of symptoms by severity"
+          }
+        },
+        "summary": "Get Symptoms by Severity",
+        "tags": [
+          "Symptom"
+        ]
+      }
+    },
+    "/api/template": {
+      "get": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of templates"
+          }
+        },
+        "summary": "Get Templates",
+        "tags": [
+          "Template"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "key_words": {
+                  "example": "health,symptoms",
+                  "type": "string"
+                },
+                "no_of_questions": {
+                  "example": 10,
+                  "type": "integer"
+                },
+                "template_desc": {
+                  "example": "Health questionnaire",
+                  "type": "string"
+                },
+                "template_name": {
+                  "example": "Health Template",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template added successfully"
+          }
+        },
+        "summary": "Add Template",
+        "tags": [
+          "Template"
+        ]
+      }
+    },
+    "/api/template/{template_id}": {
+      "put": {
+        "parameters": [
+          {
+            "description": "Bearer Token",
+            "example": "Bearer <your_token>",
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "example": 3,
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "properties": {
+                "key_words": {
+                  "example": "health,patient,assessment",
+                  "type": "string"
+                },
+                "no_of_questions": {
+                  "example": 10,
+                  "type": "integer"
+                },
+                "template_desc": {
+                  "example": "Daily health monitoring template",
+                  "type": "string"
+                },
+                "template_name": {
+                  "example": "Health Assessment",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template updated successfully"
+          }
+        },
+        "summary": "Update Template",
+        "tags": [
+          "Template"
+        ]
+      }
+    },
+    "/api/users/role/{role_id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "role_id",
+            "required": true,
+            "type": "integer"
+          },
+          {
+            "in": "header",
+            "name": "Authorization",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users list"
+          }
+        },
+        "summary": "Get Users By Role ID",
+        "tags": [
+          "User"
+        ]
+      }
+    }
+  },
+  "securityDefinitions": {
+    "BearerAuth": {
+      "description": "Enter token like: Bearer <your_token>",
+      "in": "header",
+      "name": "Authorization",
+      "type": "apiKey"
+    }
+  },
+  "swagger": "2.0"
+}

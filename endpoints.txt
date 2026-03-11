@@ -1,0 +1,31 @@
+/api/activity -> undefined
+/api/activity/{activity_id} -> undefined
+/api/activity/{patient_id} -> Get Patient Activities
+/api/add-symptom -> undefined
+/api/change-password/{user_id} -> undefined
+/api/doctor/{doctor_id}/patients -> Get Patient Profiles By Doctor
+/api/faqs -> Get All FAQs
+/api/faqs/{faq_id} -> Get FAQ By ID
+/api/get-countries -> Get All Countries
+/api/get-symptoms -> Get All Symptoms
+/api/login -> undefined
+/api/masterdata -> Get Master Data
+/api/masterdata/{master_id} -> Get Master Data By ID
+/api/patient-profile -> undefined
+/api/patient-profile/{profile_id}/analysis -> undefined
+/api/patient-profile/{profile_id}/template -> undefined
+/api/patient/{patient_id}/profile -> Get Patient Profile
+/api/patients -> undefined
+/api/patients/{um_id} -> Get Patients by UM ID
+/api/question -> undefined
+/api/question/options -> undefined
+/api/question/options/{option_id} -> undefined
+/api/question/{q_id}/options -> Get Question Options
+/api/question/{question_id} -> undefined
+/api/question/{template_id} -> Get Questions By Template
+/api/register -> undefined
+/api/reminders/{user_id}/{role_id} -> Get Activity Reminders
+/api/symptoms/severity/{severity_level} -> Get Symptoms by Severity
+/api/template -> Get Templates
+/api/template/{template_id} -> undefined
+/api/users/role/{role_id} -> Get Users By Role ID

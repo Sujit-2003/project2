@@ -109,11 +109,14 @@ const Patients = () => {
             // Fetch profile for each patient to get doctor_id and template status
             const profilesEnriched = await Promise.all(
               docPtsRes.data.map(async (p) => {
+                // p could be { patient_id: ... } or { id: ... } based on the new API format
+                const pId = p.patient_id || p.id
                 try {
-                  const profileRes = await getPatientProfile(p.id)
+                  const profileRes = await getPatientProfile(pId)
                   if (Number(profileRes.code) === 0 && profileRes.data) {
                     return {
                       ...p,
+                      id: pId, // normalize id for the table and click action
                       profile_id: profileRes.data.profile_id || profileRes.data.id,
                       doctor_id: profileRes.data.doctor_id,
                       doctor_name: profileRes.data.doctor_name,
@@ -126,7 +129,7 @@ const Patients = () => {
                     }
                   }
                 } catch { /* no profile yet */ }
-                return p
+                return { ...p, id: pId }
               })
             )
 
@@ -134,7 +137,7 @@ const Patients = () => {
             const assignedPatients = profilesEnriched.filter((p) => Number(p.doctor_id) === Number(umId))
 
             const finalEnriched = assignedPatients.map((p) => {
-              const parent = userMap[p.um_id]
+              const parent = userMap[p.um_id] || userMap[p.parent_id]
               return {
                 ...p,
                 _parentName: parent ? decryptField(parent.username || parent.name || '') : '',
@@ -193,7 +196,7 @@ const Patients = () => {
   }
 
   // Calculate column count for empty state
-  let colCount = isDoctor ? 7 : (isAdmin ? 10 : 9)
+  let colCount = isDoctor ? 6 : (isAdmin ? 10 : 9)
 
   return (
     <CRow>
@@ -241,10 +244,10 @@ const Patients = () => {
                       <CTableHeaderCell>Patient Name</CTableHeaderCell>
                       {isDoctor ? (
                         <>
-                          <CTableHeaderCell>Age</CTableHeaderCell>
                           <CTableHeaderCell>Parent Name</CTableHeaderCell>
+                          <CTableHeaderCell>Age</CTableHeaderCell>
                           <CTableHeaderCell>Assigned Date</CTableHeaderCell>
-                          <CTableHeaderCell>Status</CTableHeaderCell>
+                          <CTableHeaderCell>Template Status</CTableHeaderCell>
                         </>
                       ) : (
                         <>
@@ -283,18 +286,15 @@ const Patients = () => {
                             </CTableDataCell>
                             {isDoctor ? (
                               <>
-                                <CTableDataCell>{calculateAge(p.p_dob)}</CTableDataCell>
                                 <CTableDataCell>
                                   <span>{p._parentName || '-'}</span>
-                                  {p._parentEmail && (
-                                    <div className="small text-body-secondary">{p._parentEmail}</div>
-                                  )}
                                 </CTableDataCell>
+                                <CTableDataCell>{calculateAge(p.p_dob) || '-'}</CTableDataCell>
                                 <CTableDataCell>
                                   {p.assigned_date ? new Date(p.assigned_date).toLocaleDateString() : '-'}
                                 </CTableDataCell>
                                 <CTableDataCell>
-                                  {p.template_name ? (
+                                  {p.template_status ? (
                                     <CBadge
                                       color={
                                         p.template_status === 'reviewed' ? 'success'
@@ -303,7 +303,7 @@ const Patients = () => {
                                       }
                                       shape="rounded-pill"
                                     >
-                                      {p.template_status ? (p.template_status.charAt(0).toUpperCase() + p.template_status.slice(1)) : 'Pending'}
+                                      {p.template_status.charAt(0).toUpperCase() + p.template_status.slice(1)}
                                     </CBadge>
                                   ) : (
                                     <span className="text-body-secondary small">No template</span>
@@ -373,18 +373,28 @@ const Patients = () => {
                             )}
 
                             <CTableDataCell className="text-center">
-                              <CButton
-                                color="primary"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => navigate(`/patients/${p.id}`)}
-                                title="View Details"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                  <circle cx="12" cy="12" r="3"/>
-                                </svg>
-                              </CButton>
+                              {isDoctor ? (
+                                <CButton
+                                  color="primary"
+                                  size="sm"
+                                  onClick={() => navigate(`/patients/${p.id || p.patient_id}`)}
+                                >
+                                  View Details
+                                </CButton>
+                              ) : (
+                                <CButton
+                                  color="primary"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => navigate(`/patients/${p.id || p.patient_id}`)}
+                                  title="View Details"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                  </svg>
+                                </CButton>
+                              )}
                             </CTableDataCell>
                           </CTableRow>
                         )
