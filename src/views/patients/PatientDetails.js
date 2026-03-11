@@ -665,37 +665,6 @@ const PatientDetails = () => {
           </CCard>
         )}
 
-        {/* ── DOCTOR: Health History Section ── */}
-        {isDoctor && (
-          <CCard className="mb-4">
-            <CCardHeader>
-              <div className="d-flex align-items-center gap-2">
-                <CIcon icon={cilNotes} height={18} className="text-info" />
-                <strong>Health History</strong>
-              </div>
-            </CCardHeader>
-            <CCardBody>
-              {patient.health_history ? (
-                <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)' }}>
-                  <div dangerouslySetInnerHTML={{ __html: patient.health_history }} />
-                </div>
-              ) : (
-                <div className="text-body-secondary text-center py-3">
-                  No health history has been recorded for this patient yet.
-                </div>
-              )}
-              {patient.about_patient && (
-                <div className="mt-3">
-                  <div className="text-body-secondary small mb-1 fw-semibold">About Patient</div>
-                  <div className="p-3 rounded border" style={{ backgroundColor: 'var(--suji-bg, #f8f9fa)' }}>
-                    <div dangerouslySetInnerHTML={{ __html: patient.about_patient }} />
-                  </div>
-                </div>
-              )}
-            </CCardBody>
-          </CCard>
-        )}
-
         {/* ── PARENT: Doctor Review Display ── */}
         {isParent && (patient.health_analysis || patient.prescription_summary) && (
           <CCard className="mb-4 border-success">
