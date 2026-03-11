@@ -38,6 +38,7 @@ import { getCountries } from '../../services/countryService'
 import { formatPatientContact } from '../../utils/countryUtils'
 import { assignDoctorToPatient, assignTemplateToPatient, submitDoctorReview, getPatientProfile } from '../../services/patientProfileService'
 import { getTemplates } from '../../services/questionnaireService'
+import { getTemplateMap } from '../../services/patientService'
 import { useToast } from '../../components/ToastContext'
 
 function calculateAge(dob) {
@@ -144,14 +145,20 @@ const PatientDetails = () => {
             const profileRes = await getPatientProfile(found.id)
             if (Number(profileRes.code) === 0 && profileRes.data) {
               const prof = profileRes.data
+              const tMap = await getTemplateMap()
+              // Derive template_status: backend doesn't return it
+              let templateStatus = null
+              if (prof.template_id) {
+                templateStatus = (prof.health_analysis || prof.prescription_summary) ? 'reviewed' : 'pending'
+              }
               enriched = {
                 ...enriched,
                 profile_id: prof.profile_id || prof.id || null,
                 doctor_id: prof.doctor_id || null,
                 doctor_name: prof.doctor_name ? decryptField(prof.doctor_name) : null,
                 template_id: prof.template_id || null,
-                template_name: prof.template_name || null,
-                template_status: prof.template_status || null,
+                template_name: prof.template_name || tMap[prof.template_id] || null,
+                template_status: templateStatus,
                 health_analysis: prof.health_analysis || null,
                 prescription_summary: prof.prescription_summary || null,
               }

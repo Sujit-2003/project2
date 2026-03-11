@@ -23,7 +23,7 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilChildFriendly } from '@coreui/icons'
-import { getPatients, getAllPatientsWithParent } from '../../services/patientService'
+import { getPatients, getAllPatientsWithParent, getTemplateMap, resetTemplateMapCache } from '../../services/patientService'
 import { getUsers } from '../../services/userService'
 import { getRoleId, getUmId, getAdminId } from '../../services/authService'
 import { decryptField, decryptSafe } from '../../services/encryptionService'
@@ -68,6 +68,7 @@ const Patients = () => {
       try {
         const countryData = await getCountries()
         setCountries(countryData)
+        resetTemplateMapCache() // fresh template names each load
 
         if (isAdmin) {
           // Load doctors for name resolution
@@ -151,22 +152,29 @@ const Patients = () => {
           const umId = getUmId()
           const res = await getPatients(umId)
           if (Number(res.code) === 0 && Array.isArray(res.data)) {
+            const tMap = await getTemplateMap()
             // Fetch profile for each patient to get template status
             const enriched = await Promise.all(
               res.data.map(async (p) => {
                 try {
                   const profileRes = await getPatientProfile(p.id)
                   if (Number(profileRes.code) === 0 && profileRes.data) {
+                    const prof = profileRes.data
+                    // Derive template_status: backend doesn't return it
+                    let templateStatus = null
+                    if (prof.template_id) {
+                      templateStatus = (prof.health_analysis || prof.prescription_summary) ? 'reviewed' : 'pending'
+                    }
                     return {
                       ...p,
-                      profile_id: profileRes.data.profile_id || profileRes.data.id,
-                      doctor_id: profileRes.data.doctor_id,
-                      doctor_name: profileRes.data.doctor_name,
-                      template_id: profileRes.data.template_id,
-                      template_name: profileRes.data.template_name,
-                      template_status: profileRes.data.template_status,
-                      health_analysis: profileRes.data.health_analysis,
-                      prescription_summary: profileRes.data.prescription_summary,
+                      profile_id: prof.profile_id || prof.id,
+                      doctor_id: prof.doctor_id,
+                      doctor_name: prof.doctor_name,
+                      template_id: prof.template_id,
+                      template_name: prof.template_name || tMap[prof.template_id] || null,
+                      template_status: templateStatus,
+                      health_analysis: prof.health_analysis,
+                      prescription_summary: prof.prescription_summary,
                     }
                   }
                 } catch { /* no profile yet */ }
