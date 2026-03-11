@@ -96,87 +96,53 @@ const Patients = () => {
           setPatients(enriched)
         } else if (isDoctor) {
           // Doctor sees only assigned patients via dedicated endpoint
+          // API returns: patient_id, patient_fname, patient_lname, age, assigned_date,
+          //   doctor_id, doctor_name, profile_id, template_id, template_name,
+          //   health_analysis, prescription_summary, health_history, about_patient
+          // NOTE: API does NOT return um_id or template_status
           const umId = getUmId()
           const docPtsRes = await getDoctorPatients(umId)
           if (Number(docPtsRes.code) === 0 && Array.isArray(docPtsRes.data)) {
-            // Load parent info for each patient
+            // Load all parents to resolve parent names
+            // Since API doesn't return um_id, we fetch all parents and their patients to build a reverse map
             const userRes = await getUsers(1)
             let allUsers = []
             if (Array.isArray(userRes)) allUsers = userRes
             else if (Array.isArray(userRes.data)) allUsers = userRes.data
-            const userMap = {}
-            allUsers.forEach((u) => { userMap[u.id] = u })
 
-            // Debug: log raw API response to understand field names
-            console.log('[DOCTOR_DEBUG] Raw getDoctorPatients response:', JSON.stringify(docPtsRes.data[0], null, 2))
-
-            // Fetch profile + full patient data for each patient
-            const profilesEnriched = await Promise.all(
-              docPtsRes.data.map(async (p) => {
-                const pId = p.patient_id || p.id
-                let profileData = {}
-                let patientData = {}
-
-                // Fetch profile data (doctor, template, analysis)
-                try {
-                  const profileRes = await getPatientProfile(pId)
-                  if (Number(profileRes.code) === 0 && profileRes.data) {
-                    profileData = profileRes.data
-                  }
-                } catch { /* no profile yet */ }
-
-                // Fetch full patient record if basic fields are missing
-                // getDoctorPatients may return limited fields — need p_dob, um_id etc. from patients endpoint
-                const parentId = p.um_id || p.parent_id || profileData.um_id
-                if (parentId && !p.p_dob) {
-                  try {
-                    const patsRes = await getPatients(parentId)
-                    if (Number(patsRes.code) === 0 && Array.isArray(patsRes.data)) {
-                      const found = patsRes.data.find((pt) => String(pt.id) === String(pId))
-                      if (found) patientData = found
-                    }
-                  } catch { /* ignore */ }
-                }
-
-                console.log('[DOCTOR_DEBUG] Profile data for patient', pId, ':', JSON.stringify(profileData, null, 2))
-
-                return {
-                  ...patientData,
-                  ...p,
-                  id: pId,
-                  um_id: p.um_id || patientData.um_id || profileData.um_id || null,
-                  patient_fname: p.patient_fname || patientData.patient_fname || '',
-                  patient_lname: p.patient_lname || patientData.patient_lname || '',
-                  p_dob: p.p_dob || patientData.p_dob || null,
-                  user_gender: p.user_gender || patientData.user_gender || '',
-                  profile_id: profileData.profile_id || profileData.id || null,
-                  doctor_id: profileData.doctor_id || p.doctor_id || null,
-                  doctor_name: (profileData.doctor_name || p.doctor_name) ? decryptField(profileData.doctor_name || p.doctor_name) : null,
-                  template_id: profileData.template_id || p.template_id || null,
-                  template_name: profileData.template_name || p.template_name || null,
-                  template_status: profileData.template_status || p.template_status || null,
-                  health_analysis: profileData.health_analysis || p.health_analysis || null,
-                  prescription_summary: profileData.prescription_summary || p.prescription_summary || null,
-                  assigned_date: profileData.created_at || profileData.updated_at || p.created_at || null,
-                  health_history: p.health_history || patientData.health_history || null,
-                  about_patient: p.about_patient || patientData.about_patient || null,
-                }
-              })
-            )
-
-            // Filter to show only this doctor's patients
-            const assignedPatients = profilesEnriched.filter((p) => Number(p.doctor_id) === Number(umId))
-
-            const finalEnriched = assignedPatients.map((p) => {
-              const parent = userMap[p.um_id] || userMap[p.parent_id]
-              return {
-                ...p,
-                _parentName: parent ? decryptField(parent.username || parent.name || '') : '',
-                _parentEmail: parent ? decryptSafe(parent.emailid || parent.email || '') : '',
+            // Build patient_id -> parent mapping by fetching each parent's patients
+            const patientParentMap = {}
+            const allPatientsRes = await Promise.all(allUsers.map((u) => getPatients(u.id)))
+            allPatientsRes.forEach((res, idx) => {
+              if (Number(res.code) === 0 && Array.isArray(res.data)) {
+                res.data.forEach((pt) => {
+                  patientParentMap[pt.id] = allUsers[idx]
+                })
               }
             })
-            console.log('[DOCTOR_DEBUG] Final enriched patients:', JSON.stringify(finalEnriched.map(p => ({ id: p.id, fname: p.patient_fname, parentName: p._parentName, dob: p.p_dob, assigned_date: p.assigned_date, template_status: p.template_status, um_id: p.um_id })), null, 2))
-            setPatients(finalEnriched)
+
+            const enriched = docPtsRes.data.map((p) => {
+              const pId = p.patient_id || p.id
+              const parent = patientParentMap[pId]
+
+              // Derive template_status from available data
+              let templateStatus = p.template_status || null
+              if (!templateStatus && p.template_id) {
+                if (p.health_analysis || p.prescription_summary) {
+                  templateStatus = 'reviewed'
+                } else {
+                  templateStatus = 'pending'
+                }
+              }
+
+              return {
+                ...p,
+                id: pId,
+                _parentName: parent ? decryptField(parent.username || parent.name || '') : (p.parent_name || '-'),
+                template_status: templateStatus,
+              }
+            })
+            setPatients(enriched)
           } else {
             setPatients([])
           }
@@ -321,9 +287,11 @@ const Patients = () => {
                                 <CTableDataCell>
                                   <span>{p._parentName || '-'}</span>
                                 </CTableDataCell>
-                                <CTableDataCell>{calculateAge(p.p_dob) || '-'}</CTableDataCell>
                                 <CTableDataCell>
-                                  {p.assigned_date ? new Date(p.assigned_date).toLocaleDateString() : '-'}
+                                  {p.age != null ? `${p.age} yrs` : (calculateAge(p.p_dob) || '-')}
+                                </CTableDataCell>
+                                <CTableDataCell>
+                                  {p.assigned_date ? new Date(p.assigned_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
                                 </CTableDataCell>
                                 <CTableDataCell>
                                   {p.template_status ? (
